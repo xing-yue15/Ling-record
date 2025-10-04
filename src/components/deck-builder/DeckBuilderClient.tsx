@@ -30,7 +30,7 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
     // This logic does NOT correctly implement the new rules.
     // It's a temporary placeholder to keep the UI from breaking.
     let totalCost = 0;
-    let description = '';
+    const descriptionParts: string[] = [];
     let attack = 0;
     let health = 0;
 
@@ -41,8 +41,8 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
         }
 
         const desc = type === '法术牌' ? term.description.spell : term.description.creature;
-        if (desc) {
-            description += desc.replace(/X/g, '1') + ' '; // Assume X=1 for now
+        if (desc && !descriptionParts.includes(desc)) { // Prevent duplicate description parts
+             descriptionParts.push(desc.replace(/X/g, '1')); // Assume X=1 for now
         }
         
         if (type === '造物牌' && term.id === 'damage') attack += 2;
@@ -59,7 +59,7 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
         terms,
         finalCost,
         type,
-        description: description.trim(),
+        description: descriptionParts.join(' ').trim(), // Join parts with a space
         attack,
         health,
         artId: terms[0]?.artId || 'card-art-1',
@@ -98,6 +98,28 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   }, [deck]);
 
   const addTermToCrafting = (term: Term) => {
+    const isNumericTerm = term.name.includes('X');
+    const isAlreadyInCrafting = craftingTerms.some(t => t.id === term.id);
+
+    if (!isNumericTerm && isAlreadyInCrafting) {
+        toast({
+            title: '无法添加词条',
+            description: `“${term.name}” 是一个唯一的词条，不能重复添加。`,
+            variant: 'destructive',
+        });
+        return;
+    }
+    
+    // Prevent adding more than one of the same limiter term
+    if (term.type === '限定' && isAlreadyInCrafting) {
+       toast({
+            title: '无法添加限定词',
+            description: '每张卡牌只能有一个相同的限定词。',
+            variant: 'destructive',
+        });
+        return;
+    }
+
     // TODO: Implement UI for setting 'X' value
     setCraftingTerms(prev => [...prev, term]);
   };
@@ -210,17 +232,20 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                       ) : (
                         <div ref={scrollContainerRef} className="overflow-x-auto whitespace-nowrap pb-4">
                           <div className="flex w-max space-x-4">
-                          {groupedCraftingTerms.map(({ term, count }) => (
+                          {groupedCraftingTerms.map(({ term, count }) => {
+                            const isNumeric = term.name.includes('X');
+                            return (
                               <div key={term.id} className="relative inline-block">
                                   <Badge variant="secondary" className="text-lg p-3 pr-8">
                                       {term.name}
-                                      {count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
+                                      {isNumeric && count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
                                   </Badge>
                                   <button onClick={() => removeTermFromCrafting(term.id)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
                                       <Trash2 className="w-3 h-3" />
                                   </button>
                               </div>
-                          ))}
+                            )
+                          })}
                           </div>
                         </div>
                       )}
