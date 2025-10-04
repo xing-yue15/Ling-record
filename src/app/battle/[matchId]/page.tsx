@@ -30,7 +30,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
         health: 30,
         maxHealth: 30,
         deck: Array(25).fill({ id: 'card-1', name: '测试卡', terms: [initialTerms[0]], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' }),
-        hand: Array(5).fill({ id: 'card-ob', name: '对手卡', terms: [], finalCost: 0, type: '法术牌', description: '', artId: ''}),
+        hand: Array(5).fill(null).map((_, i) => ({ id: `card-ob-${i}`, name: '对手卡', terms: [], finalCost: 0, type: '法术牌', description: '', artId: ''})),
         graveyard: [],
         board: [null, { id: 'creature-3', cardId: 'c3', name: '爆炸稻草人', attack: 1, health: 3, maxHealth: 3, artId: 'creature-scarecrow', canAttack: true }, null, { id: 'creature-4', cardId: 'c4', name: '机械蜘蛛', attack: 2, health: 1, maxHealth: 1, artId: 'creature-spider', canAttack: true }, null, null],
         manaCap: 3,
