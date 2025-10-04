@@ -20,8 +20,6 @@ interface DeckBuilderClientProps {
   ownedTerms: Term[];
 }
 
-const DECK_MAX_COST = 100;
-
 // Function to calculate final card details
 const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card | null => {
     if (terms.length === 0) return null;
@@ -129,7 +127,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   }, []);
 
   const previewCard = useMemo(() => createCardFromTerms(craftingTerms, cardName, cardType), [craftingTerms, cardName, cardType]);
-  const deckTotalCost = useMemo(() => deck.reduce((sum, card) => sum + card.finalCost, 0), [deck]);
 
   const addTermToCrafting = (term: Term) => {
     setCraftingTerms(prev => [...prev, term]);
@@ -169,10 +166,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   
   const addCardToDeck = () => {
     if (previewCard) {
-      if (deckTotalCost + previewCard.finalCost > DECK_MAX_COST) {
-        toast({ title: '牌组法力已达上限', description: `添加此卡牌将超过 ${DECK_MAX_COST} 的法力总值限制。`, variant: 'destructive' });
-        return;
-      }
       setDeck(prev => [...prev, previewCard]);
       clearCrafting();
       toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
@@ -198,9 +191,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     });
     return Object.values(counts);
   }, [craftingTerms]);
-
-  const isDeckFull = deckTotalCost >= DECK_MAX_COST;
-
 
   return (
     <>
@@ -282,8 +272,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                           <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
                           <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
                         </div>
-                        <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={isDeckFull || (previewCard && deckTotalCost + previewCard.finalCost > DECK_MAX_COST)}>
-                          添加到牌组 {isDeckFull && "(法力已满)"}
+                        <Button size="lg" className="w-full" onClick={addCardToDeck}>
+                          添加到牌组
                         </Button>
                       </CardContent>
                     </UICard>
@@ -306,12 +296,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
-                      <div className="text-right">
-                          <p className="text-sm font-bold text-primary">{deckTotalCost} / {DECK_MAX_COST}</p>
-                          <p className="text-xs text-muted-foreground">总法力消耗</p>
-                      </div>
                     </div>
-                    <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2" />
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[calc(100vh-33rem)]">

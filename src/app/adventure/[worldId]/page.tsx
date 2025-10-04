@@ -107,14 +107,6 @@ export default function AdventureWorldPage({ params }: { params: { worldId: stri
           </div>
         )}
       </main>
-
-       {/* Bottom Info Bar */}
-      <footer className="p-4 bg-background/50 rounded-lg border mt-4">
-        <div className="flex items-center justify-center gap-4">
-            <h3 className="text-lg font-headline">我的词条库</h3>
-            <p className="font-bold text-primary text-xl">{playerData.ownedTerms}</p>
-        </div>
-      </footer>
     </div>
   );
 }
