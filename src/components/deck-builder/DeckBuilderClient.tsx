@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, Save, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Wand2, Loader2, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -37,63 +37,71 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
 
     // --- Process Main Terms ---
     const mainTermCounts: { [id: string]: number } = {};
+    const uniqueMainTerms: Term[] = [];
+
     mainTerms.forEach(term => {
         mainTermCounts[term.id] = (mainTermCounts[term.id] || 0) + 1;
+        if (!uniqueMainTerms.some(t => t.id === term.id)) {
+            uniqueMainTerms.push(term);
+        }
     });
 
-    Object.keys(mainTermCounts).forEach(termId => {
-        const term = mainTerms.find(t => t.id === termId);
-        if (!term) return;
-
-        const count = mainTermCounts[termId];
+    uniqueMainTerms.forEach(term => {
+        const count = mainTermCounts[term.id];
         const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
         
         if (descTemplate) {
-            const finalDesc = descTemplate.replace(/(\d+)[xX]/g, (match, num) => {
-                return (parseInt(num) * count).toString();
-            }).replace(/[xX]/g, count.toString());
+            const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
+                const num = numStr ? parseInt(numStr, 10) : 1;
+                return (num * count).toString();
+            });
              if (finalDesc.trim()) descriptionParts.push(finalDesc);
         }
-
+        
         if (type === '造物牌') {
-            const attackDesc = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
-            if (attackDesc) {
-                attack += (parseInt(attackDesc[1] || '1') * count);
+             const attackMatch = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
+            if (attackMatch) {
+                const baseAttack = attackMatch[1] ? parseInt(attackMatch[1]) : 1;
+                attack += baseAttack * count;
             }
-            const healthDesc = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
-             if (healthDesc) {
-                health += (parseInt(healthDesc[1] || '1') * count);
+             const healthMatch = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
+             if (healthMatch) {
+                const baseHealth = healthMatch[1] ? parseInt(healthMatch[1]) : 1;
+                health += baseHealth * count;
             }
         }
     });
+
 
     // --- Process Limiter Groups ---
     limiterGroups.forEach(group => {
         const limiter = group.limiter;
         const children = group.children;
         let limiterDesc = type === '法术牌' ? limiter.description.spell : limiter.description.creature;
-        limiterDesc = limiterDesc.replace(/\[触发特定效果\]/g, '??'); // Placeholder
         
         const childTermCounts: { [id: string]: number } = {};
+        const uniqueChildTerms: Term[] = [];
+
         children.forEach(term => {
             childTermCounts[term.id] = (childTermCounts[term.id] || 0) + 1;
+            if (!uniqueChildTerms.some(t => t.id === term.id)) {
+                uniqueChildTerms.push(term);
+            }
         });
 
         const childEffectDescriptions: string[] = [];
-        Object.keys(childTermCounts).forEach(termId => {
-            const term = children.find(t => t.id === termId);
-            if (!term) return;
-
-            const count = childTermCounts[termId];
+        uniqueChildTerms.forEach(term => {
+            const count = childTermCounts[term.id];
             const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
 
              if (descTemplate) {
-                const finalDesc = descTemplate.replace(/(\d+)[xX]/g, (match, num) => {
-                    return (parseInt(num) * count).toString();
-                }).replace(/[xX]/g, count.toString());
+                const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
+                    const num = numStr ? parseInt(numStr, 10) : 1;
+                    return (num * count).toString();
+                });
 
                 if (finalDesc.trim()) {
-                    childEffectDescriptions.push(finalDesc);
+                    childEffectDescriptions.push(finalDesc.trim());
                 }
             }
         });
@@ -128,11 +136,94 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     };
 };
 
+const CraftingAreaContent = ({
+  terms,
+  onRemove,
+  onGroupClick,
+}: {
+  terms: CraftingItem[];
+  onRemove: (termId: string, index: number, isGroup: boolean) => void;
+  onGroupClick?: (group: LimiterGroup, index: number) => void;
+}) => {
+  const groupedTerms = useMemo(() => {
+    const termMap: { [id: string]: { item: CraftingItem; count: number; originalIndex: number } } = {};
+
+    terms.forEach((item, index) => {
+      const isGroup = 'limiter' in item;
+      const key = isGroup ? item.limiter.id : item.id;
+      const isNumeric = !isGroup && (item as Term).name.includes('X');
+
+      if (!termMap[key] || isGroup) {
+        termMap[key + index] = { item, count: 1, originalIndex: index };
+      } else if (isNumeric) {
+         termMap[key].count++;
+      }
+    });
+
+    return Object.values(termMap);
+  }, [terms]);
+  
+  return (
+    <div className="flex w-max space-x-4">
+      {groupedTerms.map(({ item, count, originalIndex }) => {
+        if ('limiter' in item) {
+          const group = item as LimiterGroup;
+          return (
+            <div
+              key={group.limiter.id + originalIndex}
+              className="relative inline-block p-2 border border-dashed rounded-lg bg-black/20 cursor-pointer"
+              onClick={() => onGroupClick?.(group, originalIndex)}
+            >
+              <Badge variant="default" className="text-md p-2">
+                {group.limiter.name}
+              </Badge>
+              <div className="flex gap-2 mt-2 pl-2">
+                {group.children.map((child, childIndex) => (
+                  <Badge key={child.id + childIndex} variant="secondary">
+                    {child.name}
+                  </Badge>
+                ))}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(group.limiter.id, originalIndex, true);
+                }}
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        }
+        
+        const term = item as Term;
+        const isNumeric = term.name.includes('X');
+        return (
+          <div key={term.id + originalIndex} className="relative inline-block">
+            <Badge variant="secondary" className="text-lg p-3 pr-8">
+              {term.name.replace('X','')}
+              {isNumeric && count > 0 && <span className="font-bold text-sm ml-1">x{count}</span>}
+            </Badge>
+            <button
+              onClick={() => onRemove(term.id, originalIndex, false)}
+              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [mainTerms, setMainTerms] = useState<CraftingItem[]>([]);
   const [limiterTerms, setLimiterTerms] = useState<Term[]>([]);
-  const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term }>('main');
+  const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term, originalIndex?: number }>('main');
+
 
   const [cardName, setCardName] = useState('新卡牌');
   const [cardType, setCardType] = useState<CardType>('法术牌');
@@ -163,7 +254,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
   const previewCard = useMemo(() => {
       let allTerms: CraftingItem[] = [...mainTerms];
-      if (craftingMode !== 'main' && limiterTerms.length > 0) {
+      if (craftingMode !== 'main' && craftingMode.originalIndex === undefined && limiterTerms.length > 0) {
         allTerms.push({ limiter: craftingMode.limiter, children: limiterTerms });
       }
       return createCardFromTerms(allTerms, cardName, cardType);
@@ -178,7 +269,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     // Entering limiter edit mode
     if (term.type === '限定') {
         const isAlreadyInMain = mainTerms.some(t => 'limiter' in t && t.limiter.id === term.id);
-        if (isAlreadyInMain) {
+        if (craftingMode === 'main' && isAlreadyInMain) {
             toast({
                 title: '无法添加限定词',
                 description: '每张卡牌只能有一个相同的限定词。',
@@ -213,17 +304,18 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     }
   };
 
-  const removeTermFromCrafting = (termId: string, index: number) => {
+  const removeTermFromCrafting = (termId: string, index: number, isGroup: boolean) => {
     if (craftingMode === 'main') {
-        // If it's a limiter group, remove the whole group
-        setMainTerms(prev => prev.filter((item, i) => {
-            if (i !== index) return true;
-            if ('limiter' in item) return item.limiter.id !== termId;
-            return item.id !== termId;
-        }));
+        setMainTerms(prev => prev.filter((_, i) => i !== index));
     } else {
         setLimiterTerms(prev => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleLimiterGroupClick = (group: LimiterGroup, index: number) => {
+    setCraftingMode({ limiter: group.limiter, originalIndex: index });
+    setLimiterTerms(group.children);
+    setMainTerms(prev => prev.filter((_, i) => i !== index));
   };
   
   const clearCrafting = () => {
@@ -236,19 +328,16 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
 
   const completeLimiterEditing = () => {
-    if (craftingMode === 'main' || limiterTerms.length === 0) {
-      // If no terms added, just exit without adding group
-      setLimiterTerms([]);
-      setCraftingMode('main');
-      return;
-    };
+    if (craftingMode === 'main') return;
 
-    const newGroup: LimiterGroup = {
-        limiter: craftingMode.limiter,
-        children: limiterTerms,
-    };
+    if (limiterTerms.length > 0) {
+      const newGroup: LimiterGroup = {
+          limiter: craftingMode.limiter,
+          children: limiterTerms,
+      };
+       setMainTerms(prev => [...prev, newGroup]);
+    }
     
-    setMainTerms(prev => [...prev, newGroup]);
     setLimiterTerms([]);
     setCraftingMode('main');
   }
@@ -299,37 +388,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     }
     toast({ title: '牌组已保存！', description: '（此功能为占位符）' });
   }
-  
-  const groupedCraftingTerms = useMemo(() => {
-    const termsToGroup: CraftingItem[] = [...termsInCurrentCraftingArea];
-
-    const termMap: { [id: string]: { item: CraftingItem; count: number } } = {};
-
-    termsToGroup.forEach(item => {
-        if ('limiter' in item) {
-             const key = item.limiter.id;
-             if (!termMap[key]) {
-                termMap[key] = { item: item, count: 1 };
-             }
-        } else {
-            const key = item.id;
-            const isNumeric = item.name.includes('X');
-            if (isNumeric) {
-                if (!termMap[key]) {
-                    termMap[key] = { item: item, count: 0 };
-                }
-                termMap[key].count++;
-            } else {
-                 if (!termMap[key]) {
-                    termMap[key] = { item: item, count: 1 };
-                 }
-            }
-        }
-    });
-
-    return Object.values(termMap);
-  }, [termsInCurrentCraftingArea]);
-
 
   return (
     <>
@@ -344,7 +402,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                 {ownedTerms.map(term => (
                   <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold">{term.name} <span className="text-xs font-normal text-muted-foreground">({term.type})</span></h3>
+                      <h3 className="font-bold flex items-center gap-2">
+                        {term.name} 
+                        <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
+                        <Badge variant="outline">消耗: {term.cost}</Badge>
+                      </h3>
                       <p className="text-xs text-muted-foreground mt-1">法术: {term.description.spell}</p>
                       <p className="text-xs text-muted-foreground">造物: {term.description.creature}</p>
                     </div>
@@ -387,44 +449,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                           </p>
                       ) : (
                         <div ref={scrollContainerRef} className="overflow-x-auto whitespace-nowrap pb-4">
-                          <div className="flex w-max space-x-4">
-                          {groupedCraftingTerms.map(({ item, count }, index) => {
-                            if ('limiter' in item) { // This is a Limiter Group in the main area
-                                return (
-                                     <div key={item.limiter.id} className="relative inline-block p-2 border border-dashed rounded-lg bg-black/20">
-                                        <Badge variant="default" className="text-md p-2">
-                                            {item.limiter.name}
-                                        </Badge>
-                                        <div className="flex gap-2 mt-2 pl-2">
-                                            {item.children.map(child => (
-                                                <Badge key={child.id} variant="secondary">{child.name}</Badge>
-                                            ))}
-                                        </div>
-                                         <button onClick={() => removeTermFromCrafting(item.limiter.id, mainTerms.findIndex(t => 'limiter' in t && t.limiter.id === item.limiter.id))} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                     </div>
-                                )
-                            }
-                            const term = item as Term;
-                            const isNumeric = term.name.includes('X');
-                            
-                            // Find the original index to pass to remove function
-                            const originalIndex = termsInCurrentCraftingArea.findIndex(t => 'id' in t && t.id === term.id);
-                            
-                            return (
-                              <div key={term.id + index} className="relative inline-block">
-                                  <Badge variant="secondary" className="text-lg p-3 pr-8">
-                                      {term.name}
-                                      {isNumeric && count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
-                                  </Badge>
-                                  <button onClick={() => removeTermFromCrafting(term.id, originalIndex)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
-                                      <Trash2 className="w-3 h-3" />
-                                  </button>
-                              </div>
-                            )
-                          })}
-                          </div>
+                           <CraftingAreaContent 
+                             terms={termsInCurrentCraftingArea}
+                             onRemove={removeTermFromCrafting}
+                             onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
+                           />
                         </div>
                       )}
                     </CardContent>
@@ -518,5 +547,3 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </>
   );
 }
-
-    
