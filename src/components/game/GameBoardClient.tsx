@@ -111,6 +111,10 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
               draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: {type: 'player', playerIndex: 0} });
               draft.players[1].playedCardThisTurn = true;
             }));
+            
+            // AI ends its turn after playing a card
+            setTimeout(endTurn, 1500);
+
         }, 1000);
     } else {
         // No card to play, end turn
@@ -456,7 +460,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
-                      transform: `translateX(${(i - (humanPlayer.hand.length - 1) / 2) * 15}px) rotate(${(i - (humanPlayer.hand.length - 1) / 2) * 2}deg)`,
+                      transform: `translateX(${(i - (humanPlayer.hand.length - 1) / 2) * -15}px) rotate(${(i - (humanPlayer.hand.length - 1) / 2) * 2}deg)`,
                       transformOrigin: 'bottom center',
                   }}
                   onClick={() => gameState.gamePhase === 'selectingHandCard' ? handleHandCardSwap(i) : handlePlayCard(i)}
