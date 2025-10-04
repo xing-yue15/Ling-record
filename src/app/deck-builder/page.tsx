@@ -6,7 +6,7 @@ export default function DeckBuilderPage() {
   const ownedTerms = initialTerms;
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 h-[calc(100vh-10rem)]">
       <DeckBuilderClient ownedTerms={ownedTerms} />
     </div>
   );

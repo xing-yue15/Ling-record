@@ -32,6 +32,7 @@ export interface Creature {
   attack: number;
   health: number;
   maxHealth: number;
+  type: '造物牌'; // To distinguish it on the board
 }
 
 export interface Player {
@@ -44,6 +45,7 @@ export interface Player {
   graveyard: Card[];
   board: (Creature | null)[];
   manaCap: number;
+  currentMana: number;
 }
 
 export interface GameState {

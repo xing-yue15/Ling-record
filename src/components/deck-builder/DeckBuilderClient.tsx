@@ -192,15 +192,15 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
       {/* Terms List */}
-      <UICard>
+      <UICard className="bg-card/50">
         <CardHeader>
           <CardTitle className="font-headline">可用词条</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh] lg:h-[70vh]">
+          <ScrollArea className="h-[calc(100vh-20rem)]">
             <div className="space-y-4 pr-4">
               {ownedTerms.map(term => (
-                <div key={term.id} className="p-3 bg-secondary rounded-lg flex items-center justify-between">
+                <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
                   <div>
                     <h3 className="font-bold">{term.name} <span className="text-xs font-normal text-muted-foreground">({term.type})</span></h3>
                     <p className="text-xs text-muted-foreground mt-1">法术: {term.description.spell}</p>
@@ -226,7 +226,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Crafting Area */}
               <div className="space-y-8">
-                <UICard>
+                <UICard className="bg-card/50">
                   <CardHeader>
                     <CardTitle className="font-headline">制作区</CardTitle>
                   </CardHeader>
@@ -255,7 +255,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 </UICard>
 
                 {previewCard && (
-                  <UICard>
+                  <UICard className="bg-card/50">
                     <CardContent className="pt-6 space-y-4">
                       <div className="flex gap-2">
                             <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
@@ -279,7 +279,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
               {/* Preview */}
               <div className="flex justify-center items-start">
                   {previewCard ? <GameCard card={previewCard} /> :
-                    <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/50">
+                    <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
                         <p className="text-muted-foreground">卡牌预览</p>
                     </div>
                   }
@@ -288,7 +288,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           </TabsContent>
 
           <TabsContent value="deck" className="mt-4">
-            <UICard>
+            <UICard className="bg-card/50">
               <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
@@ -300,7 +300,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                   <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2" />
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[55vh] lg:h-[60vh]">
+                <ScrollArea className="h-[calc(100vh-28rem)]">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
                     {deck.map((card, index) => (
                       <div key={index} className="relative group/deckcard">

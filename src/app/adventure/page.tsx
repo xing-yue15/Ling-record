@@ -22,7 +22,7 @@ export default function AdventurePage() {
         {enemies.map(enemy => {
           const enemyImage = PlaceHolderImages.find(p => p.id === enemy.artId);
           return (
-            <Card key={enemy.id} className="flex flex-col">
+            <Card key={enemy.id} className="flex flex-col bg-card/50">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">{enemy.name}</CardTitle>
                 <CardDescription>{enemy.difficulty}</CardDescription>
@@ -33,7 +33,7 @@ export default function AdventurePage() {
                     src={enemyImage.imageUrl}
                     alt={enemyImage.description}
                     width={400}
-                    height={500}
+                    height={300}
                     className="w-full h-64 object-cover rounded-md mb-4"
                     data-ai-hint={enemyImage.imageHint}
                   />
