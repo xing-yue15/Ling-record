@@ -45,7 +45,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
     gamePhase: 'main',
     selectedHandCardIndex: null,
     selectedDeckCardIndex: null,
-t    urnHasSwappedCard: false,
+    turnHasSwappedCard: false,
     winner: null,
   }
 
