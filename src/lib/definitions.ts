@@ -46,7 +46,17 @@ export interface Player {
   hand: Card[];
   graveyard: Card[];
   board: (Creature | null)[];
+  playedCardThisTurn: boolean; // Add this
 }
+
+export type GamePhase = 
+  | 'main' // Player can play a card or end turn
+  | 'selectingHandCard' // Player is choosing a card from deck to swap
+  | 'selectingTarget' // Player has played a spell and must select a target
+  | 'selectingBoardSlot' // Player has played a creature and must select a slot
+  | 'resolution' // Cards in settlement zone are resolving
+  | 'combat' // Creatures are fighting
+  | 'end'; // Game has ended
 
 export interface GameState {
   players: [Player, Player];
@@ -55,7 +65,9 @@ export interface GameState {
   currentEnvironment: string | null;
   activePlayerIndex: 0 | 1;
   settlementZone: {card: Card, playerId: string}[];
-  gamePhase: 'main' | 'combat' | 'end' | 'placement';
-  selectedHandCardIndex: number | null;
+  gamePhase: GamePhase;
+  selectedHandCardIndex: number | null; // index of card in hand selected to be played
+  selectedDeckCardIndex: number | null; // index of card in deck selected to be swapped
   turnHasSwappedCard: boolean; // Each player has one chance to swap/select card per turn
+  winner: Player | null;
 }

@@ -16,7 +16,8 @@ export function Header() {
   }
 
   const navLinkClasses = (href: string) => cn(
-    "transition-colors hover:text-foreground/80 text-foreground/60"
+    "transition-colors hover:text-foreground/80",
+    pathname === href ? 'text-foreground' : 'text-foreground/60'
   );
 
   return (
@@ -29,18 +30,20 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
-          <Link
-            href="/deck-builder"
-            className={navLinkClasses("/deck-builder")}
-          >
-            牌组构筑
-          </Link>
-          <Link
-            href="/adventure"
-            className={navLinkClasses("/adventure")}
-          >
-            冒险
-          </Link>
+          <Button asChild variant="link" className={navLinkClasses("/deck-builder")}>
+            <Link
+              href="/deck-builder"
+            >
+              牌组构筑
+            </Link>
+          </Button>
+          <Button asChild variant="link" className={navLinkClasses("/adventure")}>
+            <Link
+              href="/adventure"
+            >
+              冒险
+            </Link>
+          </Button>
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
           <Button asChild variant="ghost">
