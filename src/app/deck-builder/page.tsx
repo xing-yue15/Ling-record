@@ -4,7 +4,8 @@ import { DeckBuilderClient } from '@/components/deck-builder/DeckBuilderClient';
 import { initialTerms } from '@/lib/initial-data';
 import { useSearchParams } from 'next/navigation';
 
-export default function DeckBuilderPage() {
+
+function DeckBuilderPageContent() {
   // In a real app, you'd fetch the player's owned terms from a database.
   const ownedTerms = initialTerms;
 
@@ -18,5 +19,12 @@ export default function DeckBuilderPage() {
         <DeckBuilderClient ownedTerms={ownedTerms} />
       </div>
     </div>
+  );
+}
+
+
+export default function DeckBuilderPage() {
+  return (
+      <DeckBuilderPageContent />
   );
 }

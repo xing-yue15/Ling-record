@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Wand2, Loader2, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -119,9 +118,15 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     const childResult = processTerms(group.children, type);
     
     const finalLimiterDesc = limiterDescTemplate
+      .replace('[触发特定效果]', childResult.description)
       .replace('??', childResult.description)
       .trim();
-    descriptionParts.push(finalLimiterDesc);
+
+    if(finalLimiterDesc) {
+      const naturalDesc = `${limiter.name}：${finalLimiterDesc}`;
+      descriptionParts.push(naturalDesc);
+    }
+    
 
     // Limiter Cost Modifiers
     if (typeof limiter.cost === 'string') {
