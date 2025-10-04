@@ -42,14 +42,14 @@ const prompt = ai.definePrompt({
   name: 'generateCardNamePrompt',
   input: {schema: GenerateCardNameInputSchema},
   output: {schema: GenerateCardNameOutputSchema},
-  prompt: `You are a creative card game name generator. Generate a name for a card based on the terms used to create it.
+  prompt: `你是一个富有创造力的卡牌游戏取名师。请根据以下用于创建卡牌的词条，为这张卡牌生成一个酷炫的中文名字。
 
-Terms:
+词条:
 {{#each terms}}
-- {{this.name}} ({{this.type}}) - Cost: {{this.cost}}
+- {{this.name}} ({{this.type}}) - 消耗: {{this.cost}}
 {{/each}}
 
-Card Name:`, // Just generate the card name, without any additional text.
+请只输出卡牌名称，不要包含任何其他文字。`,
 });
 
 const generateCardNameFlow = ai.defineFlow(

@@ -12,10 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Wand2, Loader2, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 
 interface DeckBuilderClientProps {
   ownedTerms: Term[];
 }
+
+const DECK_MAX_COST = 400;
 
 // Function to calculate final card details
 const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card | null => {
@@ -122,6 +125,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   }, []);
 
   const previewCard = useMemo(() => createCardFromTerms(craftingTerms, cardName, cardType), [craftingTerms, cardName, cardType]);
+  const deckTotalCost = useMemo(() => deck.reduce((sum, card) => sum + card.finalCost, 0), [deck]);
 
   const addTermToCrafting = (term: Term) => {
     setCraftingTerms(prev => [...prev, term]);
@@ -161,8 +165,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   
   const addCardToDeck = () => {
     if (previewCard) {
-      if (deck.length >= 30) {
-        toast({ title: '牌组已满', description: '你的牌组最多只能包含30张卡牌。', variant: 'destructive' });
+      if (deckTotalCost + previewCard.finalCost > DECK_MAX_COST) {
+        toast({ title: '牌组法力已达上限', description: `添加此卡牌将超过 ${DECK_MAX_COST} 的法力总值限制。`, variant: 'destructive' });
         return;
       }
       setDeck(prev => [...prev, previewCard]);
@@ -181,6 +185,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     });
     return Object.values(counts);
   }, [craftingTerms]);
+
+  const isDeckFull = deckTotalCost >= DECK_MAX_COST;
 
 
   return (
@@ -213,7 +219,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
         <Tabs defaultValue="creator" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="creator">卡牌创造</TabsTrigger>
-            <TabsTrigger value="deck">当前牌组</TabsTrigger>
+            <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
           </TabsList>
           
           <TabsContent value="creator" className="mt-4">
@@ -262,8 +268,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                         <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
                         <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
                       </div>
-                      <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={deck.length >= 30}>
-                        添加到牌组 {deck.length >= 30 && "(已满)"}
+                      <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={isDeckFull || (previewCard && deckTotalCost + previewCard.finalCost > DECK_MAX_COST)}>
+                        添加到牌组 {isDeckFull && "(法力已满)"}
                       </Button>
                     </CardContent>
                   </UICard>
@@ -284,10 +290,17 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           <TabsContent value="deck" className="mt-4">
             <UICard>
               <CardHeader>
-                <CardTitle className="font-headline">当前牌组 ({deck.length}/30)</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
+                    <div className="text-right">
+                        <p className="text-sm font-bold text-primary">{deckTotalCost} / {DECK_MAX_COST}</p>
+                        <p className="text-xs text-muted-foreground">总法力消耗</p>
+                    </div>
+                  </div>
+                  <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2" />
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[60vh] lg:h-[65vh]">
+                <ScrollArea className="h-[55vh] lg:h-[60vh]">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
                     {deck.map((card, index) => (
                       <div key={index} className="relative group/deckcard">
