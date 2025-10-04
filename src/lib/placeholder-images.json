@@ -2,51 +2,51 @@
   "placeholderImages": [
     {
       "id": "hero",
-      "description": "Mystical library with floating books and ancient scrolls.",
-      "imageUrl": "https://images.unsplash.com/photo-1750599738103-7ee221672005?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmYW50YXN5JTIwbGlicmFyeXxlbnwwfHx8fDE3NTk1NTQzNjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fantasy library"
+      "description": "A character standing in a vast fantasy landscape with floating islands and a giant moon.",
+      "imageUrl": "https://images.unsplash.com/photo-1598340158869-37859d9f0be0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmYW50YXN5JTIwZGlnaXRhbCUyMHBhaW50aW5nfGVufDB8fHx8MTc1OTYyOTU0OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy landscape"
     },
     {
       "id": "card-art-1",
-      "description": "A swirling vortex of fire.",
-      "imageUrl": "https://images.unsplash.com/photo-1648880004349-9bf1926b7556?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmaXJlJTIwdm9ydGV4fGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fire vortex"
+      "description": "Concept art of a flaming sword.",
+      "imageUrl": "https://images.unsplash.com/photo-1620601339116-ac15746356e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwc3dvcmR8ZW58MHx8fHwxNzU5NjI5NjE5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy sword"
     },
     {
       "id": "card-art-2",
-      "description": "A shield made of solid rock.",
-      "imageUrl": "https://images.unsplash.com/photo-1608158365352-f928bdaecc4b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxyb2NrJTIwc2hpZWxkfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "rock shield"
+      "description": "Digital painting of a magical shield deflecting a spell.",
+      "imageUrl": "https://images.unsplash.com/photo-1618236103632-90f9d9c25f46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmYW50YXN5JTIwc2hpZWxkfGVufDB8fHx8MTc1OTYyOTYxOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy shield"
     },
     {
       "id": "card-art-3",
-      "description": "A ghostly apparition howling.",
-      "imageUrl": "https://images.unsplash.com/photo-1635928060878-b8dff10902ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnaG9zdGx5JTIwaG93bHxlbnwwfHx8fDE3NTk1NTQzNjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "ghostly howl"
+      "description": "A necromancer summoning a spirit, digital painting.",
+      "imageUrl": "https://images.unsplash.com/photo-1610618292314-e55c7ac33485?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzaGFkb3clMjBzcGVjdGVyfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "summoning spirit"
     },
     {
       "id": "card-art-4",
-      "description": "A serene forest with glowing flora.",
-      "imageUrl": "https://images.unsplash.com/photo-1624593995409-7e7704b77261?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnbG93aW5nJTIwZm9yZXN0fGVufDB8fHx8MTc1OTQ1NTM4NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "glowing forest"
+      "description": "A priestess casting a healing spell, with golden light emanating from her hands.",
+      "imageUrl": "https://images.unsplash.com/photo-1635835616091-64539a48972e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxoZWFsaW5nJTIwbWFnaWN8ZW58MHx8fHwxNzU5NjI5NzI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healing magic"
     },
     {
       "id": "enemy-goblin",
-      "description": "A mischievous goblin artificer.",
-      "imageUrl": "https://images.unsplash.com/photo-1702700591520-43f7803b5def?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmYW50YXN5JTIwZ29ibGlufGVufDB8fHx8MTc1OTU0ODMzNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fantasy goblin"
+      "description": "Digital painting of a goblin tinkerer with goggles and gadgets.",
+      "imageUrl": "https://images.unsplash.com/photo-1635431417511-7388753d077c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnb2JsaW4lMjBhcnRpZmljZXJ8ZW58MHx8fHwxNzU5NjI5Nzk4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "goblin artificer"
     },
     {
       "id": "enemy-golem",
-      "description": "A massive stone golem.",
+      "description": "Digital painting of a massive stone golem with glowing runes, guarding a ruin.",
       "imageUrl": "https://images.unsplash.com/photo-1693854550769-36cbae7dda53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdG9uZSUyMGdvbGVtfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "stone golem"
     },
     {
       "id": "enemy-specter",
-      "description": "A terrifying specter from the shadows.",
-      "imageUrl": "https://images.unsplash.com/photo-1610618292314-e55c7ac33485?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzaGFkb3clMjBzcGVjdGVyfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "shadow specter"
+      "description": "A terrifying shadowy wraith with glowing eyes in a dark forest.",
+      "imageUrl": "https://images.unsplash.com/photo-1617268884880-1a2963172023?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwd3JhaXRofGVufDB8fHx8MTc1OTYyOTg2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy wraith"
     }
   ]
 }
