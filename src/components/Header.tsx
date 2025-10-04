@@ -9,10 +9,10 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const pathname = usePathname();
-  const inBattle = pathname.startsWith('/battle');
+  const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds');
   const isHomePage = pathname === '/';
 
-  if (inBattle) {
+  if (inGame) {
     return null;
   }
 
