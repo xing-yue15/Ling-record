@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "Mystical library with floating books and ancient scrolls.",
+      "imageUrl": "https://images.unsplash.com/photo-1750599738103-7ee221672005?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmYW50YXN5JTIwbGlicmFyeXxlbnwwfHx8fDE3NTk1NTQzNjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy library"
+    },
+    {
+      "id": "card-art-1",
+      "description": "A swirling vortex of fire.",
+      "imageUrl": "https://images.unsplash.com/photo-1648880004349-9bf1926b7556?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmaXJlJTIwdm9ydGV4fGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fire vortex"
+    },
+    {
+      "id": "card-art-2",
+      "description": "A shield made of solid rock.",
+      "imageUrl": "https://images.unsplash.com/photo-1608158365352-f928bdaecc4b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxyb2NrJTIwc2hpZWxkfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "rock shield"
+    },
+    {
+      "id": "card-art-3",
+      "description": "A ghostly apparition howling.",
+      "imageUrl": "https://images.unsplash.com/photo-1635928060878-b8dff10902ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnaG9zdGx5JTIwaG93bHxlbnwwfHx8fDE3NTk1NTQzNjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ghostly howl"
+    },
+    {
+      "id": "card-art-4",
+      "description": "A serene forest with glowing flora.",
+      "imageUrl": "https://images.unsplash.com/photo-1624593995409-7e7704b77261?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnbG93aW5nJTIwZm9yZXN0fGVufDB8fHx8MTc1OTQ1NTM4NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "glowing forest"
+    },
+    {
+      "id": "enemy-goblin",
+      "description": "A mischievous goblin artificer.",
+      "imageUrl": "https://images.unsplash.com/photo-1702700591520-43f7803b5def?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmYW50YXN5JTIwZ29ibGlufGVufDB8fHx8MTc1OTU0ODMzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy goblin"
+    },
+    {
+      "id": "enemy-golem",
+      "description": "A massive stone golem.",
+      "imageUrl": "https://images.unsplash.com/photo-1693854550769-36cbae7dda53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdG9uZSUyMGdvbGVtfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "stone golem"
+    },
+    {
+      "id": "enemy-specter",
+      "description": "A terrifying specter from the shadows.",
+      "imageUrl": "https://images.unsplash.com/photo-1610618292314-e55c7ac33485?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzaGFkb3clMjBzcGVjdGVyfGVufDB8fHx8MTc1OTU1NDM2N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "shadow specter"
+    }
+  ]
 }
