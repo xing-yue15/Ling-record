@@ -41,8 +41,9 @@ export default function AdventurePage() {
                 <p className="text-muted-foreground">{enemy.description}</p>
               </CardContent>
               <CardFooter>
+                {/* Updated Link to go to deck builder first, passing enemyId as a query param */}
                 <Button asChild className="w-full">
-                  <Link href={`/battle/${enemy.id}`}>战斗</Link>
+                  <Link href={`/deck-builder?enemyId=${enemy.id}`}>战斗</Link>
                 </Button>
               </CardFooter>
             </Card>

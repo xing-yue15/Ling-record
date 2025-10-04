@@ -21,15 +21,14 @@ function CardContentLayout({ card, isCreatureInstance, cardData }: { card: CardD
       <CardHeader className="p-2 relative">
         <CardTitle className={cn("font-headline text-center truncate", isCreatureInstance ? "text-xs" : "text-base")}>{card.name}</CardTitle>
         {!isCreatureInstance && (
-          <div className="absolute top-1 right-1 flex items-center justify-center bg-background/80 rounded-full w-7 h-7 border border-primary">
-            <ManaIcon className="w-3 h-3 text-primary" />
-            <span className="font-bold text-base text-primary-foreground ml-0.5">{cardData.finalCost}</span>
+          <div className="absolute top-1 right-1 flex items-center justify-center bg-primary/90 rounded-full w-8 h-8 border border-sky-300 shadow-lg">
+            <ManaIcon className="w-4 h-4 text-white" />
+            <span className="font-bold text-lg text-white ml-0.5">{cardData.finalCost}</span>
           </div>
         )}
       </CardHeader>
       <CardContent className="p-2 flex-grow relative flex items-center justify-center text-center">
         <p className={cn(isCreatureInstance ? 'text-[10px]' : 'text-xs', 'text-muted-foreground')}>
-          {/* Description is now in the tooltip for hand cards, only show for non-hand cards */}
           {cardData.description}
         </p>
       </CardContent>
