@@ -35,6 +35,36 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   const opponentPlayer = gameState.players[1 - gameState.activePlayerIndex];
   const isPlayerTurn = gameState.activePlayerIndex === 0;
 
+  // AI Logic
+  useEffect(() => {
+    if (!isPlayerTurn && gameState.gamePhase === 'main' && !gameState.winner) {
+      const aiPlayer = gameState.players[1];
+      if (aiPlayer.playedCardThisTurn) {
+        // AI already played, end its turn
+        setTimeout(endTurn, 1000);
+        return;
+      };
+
+      // Simple AI: play the first possible card
+      const cardToPlayIndex = aiPlayer.hand.findIndex(card => true); // In a real game, check cost
+      
+      if (cardToPlayIndex > -1) {
+        const card = aiPlayer.hand[cardToPlayIndex];
+        // Simulate playing a card to the settlement zone
+        setTimeout(() => {
+           setGameState(produce(draft => {
+            const [playedCard] = draft.players[1].hand.splice(cardToPlayIndex, 1);
+            draft.settlementZone.push({ card: playedCard, playerId: 'opponent' });
+            draft.players[1].playedCardThisTurn = true;
+          }));
+        }, 1000);
+      } else {
+         // No card to play, end turn
+        setTimeout(endTurn, 1000);
+      }
+    }
+  }, [gameState.activePlayerIndex, gameState.gamePhase, gameState.winner, isPlayerTurn]);
+  
   useEffect(() => {
     let toastMessage = '';
     if (!isPlayerTurn) return;
@@ -59,11 +89,6 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     if (!isPlayerTurn || (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget')) {
       return;
     }
-
-    if (activePlayer.playedCardThisTurn && gameState.gamePhase === 'main') {
-        toast({title: "本回合已出过牌", description: "每回合只能出一张牌。", variant: 'destructive'});
-        return;
-    }
     
     // Cancel selection if clicking the same card
     if (gameState.selectedHandCardIndex === cardIndex) {
@@ -72,6 +97,11 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         draft.gamePhase = 'main';
       }));
       return;
+    }
+
+    if (activePlayer.playedCardThisTurn && gameState.gamePhase === 'main') {
+        toast({title: "本回合已出过牌", description: "每回合只能出一张牌。", variant: 'destructive'});
+        return;
     }
 
     const card = activePlayer.hand[cardIndex];
@@ -136,7 +166,6 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         const cardIndex = draft.selectedHandCardIndex!;
         const [card] = player.hand.splice(cardIndex, 1);
         
-        // Here you would add the target info to the settlement zone
         draft.settlementZone.push({ card, playerId: player.id, target });
 
         player.playedCardThisTurn = true;
@@ -146,7 +175,8 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   }
 
   const endTurn = () => {
-    if (!isPlayerTurn || gameState.gamePhase !== 'main') return;
+    if (!isPlayerTurn && gameState.activePlayerIndex !== 1) return; // Prevent multiple calls
+    if (isPlayerTurn && gameState.gamePhase !== 'main') return;
 
     setGameState(produce(draft => {
       // --- Resolution Phase ---
@@ -168,41 +198,58 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         }
       }
       
-      // Remove dead creatures and check for winner
       let winnerFound = false;
       draft.players.forEach((player, pIndex) => {
+        // Remove dead creatures
         for(let i=0; i < player.board.length; i++) {
             if(player.board[i] && player.board[i]!.health <= 0) {
                 player.graveyard.push(player.board[i]! as unknown as CardData);
                 player.board[i] = null;
             }
         }
+        // Check for player death
         if (player.health <= 0) {
             draft.winner = draft.players[1 - pIndex];
             draft.gamePhase = 'end';
             winnerFound = true;
         }
       });
+
       if (winnerFound) return;
 
 
       // --- End of Turn Phase ---
-      draft.turnCount += 1;
-      
-      // Reset per-turn flags and wake up creatures for current player
-      const currentPlayer = draft.players[draft.activePlayerIndex];
-      currentPlayer.playedCardThisTurn = false;
-      currentPlayer.turnHasSwappedCard = false;
-      currentPlayer.board.forEach(c => {
-        if(c) c.canAttack = true;
+      const previousPlayer = draft.players[draft.activePlayerIndex];
+      previousPlayer.board.forEach(c => {
+        if(c) c.canAttack = true; // Wake up creatures
       });
 
       // Switch active player
       draft.activePlayerIndex = 1 - draft.activePlayerIndex;
+      const newActivePlayer = draft.players[draft.activePlayerIndex];
+      
+      // New turn preparations for the new active player
+      newActivePlayer.playedCardThisTurn = false;
+      newActivePlayer.turnHasSwappedCard = false;
       
       // Fatigue damage
-      if (currentPlayer.deck.length === 0) {
-          currentPlayer.health -= Math.ceil(currentPlayer.maxHealth * 0.2);
+      if (newActivePlayer.deck.length === 0) {
+          newActivePlayer.health -= Math.ceil(newActivePlayer.maxHealth * 0.2);
+          if (newActivePlayer.health <= 0) {
+            draft.winner = draft.players[1 - draft.activePlayerIndex];
+            draft.gamePhase = 'end';
+            return;
+          }
+      } else {
+        // Draw a card
+        const [drawnCard] = newActivePlayer.deck.splice(0,1);
+        if (drawnCard) {
+            newActivePlayer.hand.push(drawnCard);
+        }
+      }
+
+      if (draft.activePlayerIndex === 0) {
+        draft.turnCount += 1;
       }
     }));
   };
@@ -221,7 +268,6 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
             // Prepare to swap
             draft.selectedDeckCardIndex = deckCardIndex;
             draft.gamePhase = 'selectingHandCard';
-            toast({title: "选择一张手牌进行交换", description: "选择一张手牌与牌库中的卡牌交换。"});
         }
     }));
   };
@@ -369,3 +415,5 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     </>
   );
 }
+
+    
