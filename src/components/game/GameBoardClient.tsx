@@ -23,81 +23,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface GameBoardClientProps {
   matchId: string;
+  initialState: GameState;
 }
 
-// Function to generate the initial state. This is moved here from the page.
-const getInitialState = (matchId: string): GameState => {
-  // We can use matchId here in the future to fetch specific enemy data
-  return {
-    players: [
-      {
-        id: 'player',
-        name: '玩家',
-        health: 100,
-        maxHealth: 100,
-        deck: Array(24).fill(null).map((_, i) => ({ id: `card-p-${i}`, name: `玩家卡 ${i+1}`, terms: [], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' })),
-        hand: [
-          { id: 'card-hand-1', name: '火焰冲击', terms: [], finalCost: 2, type: '法术牌', description: '造成4点伤害。', artId: 'card-art-1' },
-          { id: 'card-hand-2', name: '圣光护卫', terms: [], finalCost: 3, type: '造物牌', description: '一个具有0点攻击力和4点生命值的生物。', health: 4, attack: 0, artId: 'card-art-4' },
-          { id: 'card-hand-3', name: '召唤元素', terms: [], finalCost: 3, type: '造物牌', description: '一个具有2点攻击力和2点生命值的生物。', health: 2, attack: 2, artId: 'card-art-3' },
-          { id: 'card-hand-4', name: '影子刺客', terms: [], finalCost: 4, type: '造物牌', description: '一个具有3点攻击力和2点生命值的生物。', health: 2, attack: 3, artId: 'card-art-5' },
-          { id: 'card-hand-5', name: '延迟火球', terms: [], finalCost: 1, type: '法术牌', description: '造成8点伤害。此效果将在2回合后生效。', artId: 'card-art-6' },
-        ],
-        graveyard: [],
-        board: [null, null, null, null, null, null],
-        playedCardThisTurn: false,
-        turnHasSwappedCard: false,
-      },
-      {
-        id: 'opponent',
-        name: '哥布林工匠',
-        health: 100,
-        maxHealth: 100,
-        deck: Array(25).fill(null).map((_, i) => ({ id: `card-o-${i}`, name: `敌方卡 ${i+1}`, terms: [], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' })),
-        hand: Array(5).fill(null).map((_, i) => ({ id: `card-oh-${i}`, name: '对手卡', terms: [], finalCost: i + 1, type: '法术牌', description: '', artId: ''})),
-        graveyard: [],
-        board: [null, null, null, null, null, null],
-        playedCardThisTurn: false,
-        turnHasSwappedCard: false,
-      },
-    ],
-    turnCount: 1,
-    pvpScore: [0, 0],
-    currentEnvironment: null,
-    activePlayerIndex: 0,
-    settlementZone: [],
-    gamePhase: 'main',
-    selectedHandCardIndex: null,
-    selectedDeckCardIndex: null,
-    turnHasSwappedCard: false,
-    winner: null,
-  };
-};
-
-export function GameBoardClient({ matchId }: GameBoardClientProps) {
-  const [gameState, setGameState] = useState(() => getInitialState(matchId));
+export function GameBoardClient({ matchId, initialState }: GameBoardClientProps) {
+  const [gameState, setGameState] = useState(initialState);
   const [showDeckModal, setShowDeckModal] = useState(false);
   const { toast } = useToast();
 
-  const activePlayer = gameState.players[gameState.activePlayerIndex];
-  const opponentPlayer = gameState.players[1 - gameState.activePlayerIndex];
+  const humanPlayer = gameState.players[0];
+  const aiPlayer = gameState.players[1];
   const isPlayerTurn = gameState.activePlayerIndex === 0;
 
   // AI Logic
   useEffect(() => {
     if (!isPlayerTurn && gameState.gamePhase === 'main' && !gameState.winner) {
-      const aiPlayer = gameState.players[1];
-      if (aiPlayer.playedCardThisTurn) {
+      const activeAIPlayer = gameState.players[1];
+      if (activeAIPlayer.playedCardThisTurn) {
         // AI already played, end its turn
         setTimeout(endTurn, 1000);
         return;
       };
 
       // Simple AI: play the first possible card
-      const cardToPlayIndex = aiPlayer.hand.findIndex(card => true); // In a real game, check cost
+      const cardToPlayIndex = activeAIPlayer.hand.findIndex(card => true); // In a real game, check cost
       
       if (cardToPlayIndex > -1) {
-        const card = aiPlayer.hand[cardToPlayIndex];
+        const card = activeAIPlayer.hand[cardToPlayIndex];
         // Simulate playing a card to the settlement zone
         setTimeout(() => {
            setGameState(produce(draft => {
@@ -111,7 +63,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         setTimeout(endTurn, 1000);
       }
     }
-  }, [isPlayerTurn, gameState.gamePhase, gameState.winner, gameState.players]);
+  }, [isPlayerTurn, gameState]);
   
   useEffect(() => {
     let toastMessage = '';
@@ -147,12 +99,12 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
       return;
     }
 
-    if (activePlayer.playedCardThisTurn && gameState.gamePhase === 'main') {
+    if (humanPlayer.playedCardThisTurn && gameState.gamePhase === 'main') {
         toast({title: "本回合已出过牌", description: "每回合只能出一张牌。", variant: 'destructive'});
         return;
     }
 
-    const card = activePlayer.hand[cardIndex];
+    const card = humanPlayer.hand[cardIndex];
     
     // In a real implementation, you'd check costs like discard, health etc.
     const canPlay = true; 
@@ -176,7 +128,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     if (gameState.gamePhase !== 'selectingBoardSlot' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
 
     setGameState(produce(draft => {
-      const player = draft.players[draft.activePlayerIndex];
+      const player = draft.players[0];
       if (player.board[slotIndex]) {
         toast({ title: '位置已被占据', description: '请选择一个空的格子。', variant: 'destructive' });
         return;
@@ -210,7 +162,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
      if (gameState.gamePhase !== 'selectingTarget' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
 
      setGameState(produce(draft => {
-        const player = draft.players[draft.activePlayerIndex];
+        const player = draft.players[0];
         const cardIndex = draft.selectedHandCardIndex!;
         const [card] = player.hand.splice(cardIndex, 1);
         
@@ -268,37 +220,15 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
 
       // --- End of Turn Phase ---
       const previousPlayerIndex = draft.activePlayerIndex;
-      const previousPlayer = draft.players[previousPlayerIndex];
-      previousPlayer.board.forEach(c => {
+      draft.players[previousPlayerIndex].board.forEach(c => {
         if(c) c.canAttack = true; // Wake up creatures
       });
-
+      draft.players[previousPlayerIndex].playedCardThisTurn = false;
+      draft.players[previousPlayerIndex].turnHasSwappedCard = false;
+      
       // Switch active player
       draft.activePlayerIndex = 1 - previousPlayerIndex;
-      const newActivePlayer = draft.players[draft.activePlayerIndex];
       
-      // New turn preparations for the new active player
-      newActivePlayer.playedCardThisTurn = false;
-      newActivePlayer.turnHasSwappedCard = false;
-      
-      // Fatigue damage
-      if (newActivePlayer.deck.length === 0) {
-          newActivePlayer.health -= Math.ceil(newActivePlayer.maxHealth * 0.2);
-          if (newActivePlayer.health <= 0) {
-            draft.winner = draft.players[1 - draft.activePlayerIndex];
-            draft.gamePhase = 'end';
-            return;
-          }
-      } else {
-        // Draw a card
-        if (newActivePlayer.hand.length < 6) { // Draw if hand is not full
-            const [drawnCard] = newActivePlayer.deck.splice(0,1);
-            if (drawnCard) {
-                newActivePlayer.hand.push(drawnCard);
-            }
-        }
-      }
-
       if (draft.activePlayerIndex === 0) {
         draft.turnCount += 1;
       }
@@ -309,7 +239,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     setShowDeckModal(false);
 
     setGameState(produce(draft => {
-        const player = draft.players[draft.activePlayerIndex];
+        const player = draft.players[0];
         if (player.turnHasSwappedCard) return;
 
         if (player.hand.length < 6) {
@@ -326,10 +256,10 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   };
 
   const handleHandCardSwap = (handCardIndex: number) => {
-    if (gameState.gamePhase !== 'selectingHandCard' || gameState.selectedDeckCardIndex === null || activePlayer.turnHasSwappedCard) return;
+    if (gameState.gamePhase !== 'selectingHandCard' || gameState.selectedDeckCardIndex === null || humanPlayer.turnHasSwappedCard) return;
 
     setGameState(produce(draft => {
-        const player = draft.players[draft.activePlayerIndex];
+        const player = draft.players[0];
         const deckIndex = draft.selectedDeckCardIndex!;
 
         const handCard = player.hand[handCardIndex];
@@ -350,7 +280,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                 <AlertDialogHeader>
                     <AlertDialogTitle>{gameState.winner.id === 'player' ? "你胜利了！" : "你失败了"}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {gameState.winner.id === 'player' ? "你击败了 " + opponentPlayer.name : "你被 " + gameState.winner.name + " 击败了。"}
+                        {gameState.winner.id === 'player' ? "你击败了 " + aiPlayer.name : "你被 " + gameState.winner.name + " 击败了。"}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -367,11 +297,11 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         {/* Opponent's Area */}
         <div className="flex-1">
           <PlayerArea 
-            player={opponentPlayer} 
+            player={aiPlayer} 
             isOpponent={true} 
             onBoardClick={slotIndex => handleTargetClick({ type: 'creature', playerIndex: 1, slotIndex })}
             onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 1})}
-            isTargeting={gameState.gamePhase === 'selectingTarget'}
+            isTargeting={isPlayerTurn && gameState.gamePhase === 'selectingTarget'}
           />
         </div>
 
@@ -396,14 +326,14 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
               <Button 
                 variant="outline"
                 className="w-full h-16 flex flex-col gap-1 items-center justify-center text-lg font-headline"
-                onClick={() => !activePlayer.turnHasSwappedCard && setShowDeckModal(true)}
-                disabled={!isPlayerTurn || activePlayer.turnHasSwappedCard}
+                onClick={() => !humanPlayer.turnHasSwappedCard && setShowDeckModal(true)}
+                disabled={!isPlayerTurn || humanPlayer.turnHasSwappedCard}
               >
                   <div className="flex items-center gap-2">
                       <Library />
                       <span>牌库</span>
                   </div>
-                  <span className="text-xl font-bold">{activePlayer.deck.length}</span>
+                  <span className="text-xl font-bold">{humanPlayer.deck.length}</span>
               </Button>
           </div>
         </div>
@@ -411,18 +341,18 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         {/* Player's Area */}
         <div className="flex-1">
           <PlayerArea 
-              player={activePlayer} 
+              player={humanPlayer} 
               isOpponent={false} 
               onBoardClick={handleBoardSlotClick} 
               onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 0 })}
-              isPlacing={gameState.gamePhase === 'selectingBoardSlot'}
-              isTargeting={gameState.gamePhase === 'selectingTarget'}
+              isPlacing={isPlayerTurn && gameState.gamePhase === 'selectingBoardSlot'}
+              isTargeting={isPlayerTurn && gameState.gamePhase === 'selectingTarget'}
           />
         </div>
         
         {/* Player's Hand */}
         <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-5xl h-56 flex justify-center items-end gap-2 pb-4">
-          {activePlayer.hand.map((card, i) => (
+          {humanPlayer.hand.map((card, i) => (
               <div 
                   key={card.id + i} 
                   className={cn("w-40 h-56 transition-all duration-300 hover:-translate-y-12 hover:scale-110 relative",
@@ -430,7 +360,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
-                      transform: `translateX(${(i - activePlayer.hand.length/2) * 25}px) rotate(${(i - activePlayer.hand.length/2) * 3}deg)`,
+                      transform: `translateX(${(i - humanPlayer.hand.length/2) * 25}px) rotate(${(i - humanPlayer.hand.length/2) * 3}deg)`,
                       transformOrigin: 'bottom center',
                   }}
                   onClick={() => gameState.gamePhase === 'selectingHandCard' ? handleHandCardSwap(i) : handlePlayCard(i)}
@@ -447,13 +377,13 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>检视牌库</AlertDialogTitle>
             <AlertDialogDescription>
-              {activePlayer.hand.length < 6 ? "你的手牌未满，选择一张卡牌直接加入手牌。" : "选择一张卡牌与你的手牌交换。"}
+              {humanPlayer.hand.length < 6 ? "你的手牌未满，选择一张卡牌直接加入手牌。" : "选择一张卡牌与你的手牌交换。"}
               每回合只有一次机会。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <ScrollArea className="h-full">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-              {activePlayer.deck.map((card, index) => (
+              {humanPlayer.deck.map((card, index) => (
                 <div key={card.id + index} className="cursor-pointer" onClick={() => handleDeckCardSelect(index)}>
                   <GameCard card={card} />
                 </div>
