@@ -5,7 +5,7 @@ import { produce } from 'immer';
 import { PlayerArea } from './PlayerArea';
 import { Button } from '@/components/ui/button';
 import { GameCard } from './Card';
-import { Library, Swords } from 'lucide-react';
+import { Library } from 'lucide-react';
 import type { GameState, Card as CardData, Creature, Player } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -19,56 +19,111 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { initialTerms } from '@/lib/initial-data';
 
 
 interface GameBoardClientProps {
   matchId: string;
-  initialState: GameState;
 }
 
-export function GameBoardClient({ matchId, initialState }: GameBoardClientProps) {
-  const [gameState, setGameState] = useState(initialState);
+const createInitialDeck = (): CardData[] => {
+    // For now, create a simple deck for testing
+    const card1: CardData = { id: 'c1', name: '火球术', terms: [], finalCost: 2, type: '法术牌', description: '造成 5 点伤害。', artId: 'card-art-1' };
+    const card2: CardData = { id: 'c2', name: '哥布林战士', terms: [], finalCost: 1, type: '造物牌', description: '一个基础的战士。', attack: 2, health: 2, artId: 'card-art-2' };
+    const card3: CardData = { id: 'c3', name: '治疗之光', terms: [], finalCost: 3, type: '法术牌', description: '恢复 8 点生命值。', artId: 'card-art-3' };
+    const card4: CardData = { id: 'c4', name: '石巨人', terms: [], finalCost: 5, type: '造物牌', description: '一个巨大的防御者。', attack: 4, health: 8, artId: 'card-art-4' };
+    return [card1, card2, card3, card4, { ...card1, id: 'c5' }, { ...card2, id: 'c6' }, { ...card3, id: 'c7' }, { ...card4, id: 'c8' }, { ...card1, id: 'c9' }, { ...card2, id: 'c10' }];
+};
+
+export function GameBoardClient({ matchId }: GameBoardClientProps) {
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [showDeckModal, setShowDeckModal] = useState(false);
   const { toast } = useToast();
 
-  const humanPlayer = gameState.players[0];
-  const aiPlayer = gameState.players[1];
-  const isPlayerTurn = gameState.activePlayerIndex === 0;
+  useEffect(() => {
+    // In a real app, this would be fetched from a server based on the matchId
+    // For now, we use initial static data for demonstration
+    const initialPlayerDeck = createInitialDeck();
+    const initialOpponentDeck = createInitialDeck();
 
+    const initialGameState: GameState = {
+        players: [
+            {
+                id: 'player',
+                name: '玩家',
+                health: 30,
+                maxHealth: 30,
+                deck: initialPlayerDeck,
+                hand: initialPlayerDeck.slice(0, 6),
+                graveyard: [],
+                board: Array(6).fill(null),
+                playedCardThisTurn: false,
+                turnHasSwappedCard: false,
+            },
+            {
+                id: 'opponent',
+                name: '哥布林工匠',
+                health: 30,
+                maxHealth: 30,
+                deck: initialOpponentDeck,
+                hand: initialOpponentDeck.slice(0, 6),
+                graveyard: [],
+                board: Array(6).fill(null),
+                playedCardThisTurn: false,
+                turnHasSwappedCard: false,
+            },
+        ],
+        turnCount: 1,
+        pvpScore: [0, 0],
+        currentEnvironment: null,
+        activePlayerIndex: 0,
+        settlementZone: [],
+        gamePhase: 'main',
+        selectedHandCardIndex: null,
+        selectedDeckCardIndex: null,
+        winner: null,
+    };
+    setGameState(initialGameState);
+  }, [matchId]);
+  
   // AI Logic
   useEffect(() => {
-    if (!isPlayerTurn && gameState.gamePhase === 'main' && !gameState.winner) {
-      const activeAIPlayer = gameState.players[1];
-      if (activeAIPlayer.playedCardThisTurn) {
+    if (!gameState || gameState.activePlayerIndex !== 1 || gameState.gamePhase !== 'main' || gameState.winner) {
+      return;
+    }
+
+    const aiPlayer = gameState.players[1];
+    if (aiPlayer.playedCardThisTurn) {
         // AI already played, end its turn
         setTimeout(endTurn, 1000);
         return;
-      };
+    };
 
-      // Simple AI: play the first possible card
-      const cardToPlayIndex = activeAIPlayer.hand.findIndex(card => true); // In a real game, check cost
-      
-      if (cardToPlayIndex > -1) {
-        const card = activeAIPlayer.hand[cardToPlayIndex];
+    // Simple AI: play the first possible card
+    const cardToPlayIndex = aiPlayer.hand.findIndex(card => true); // In a real game, check cost
+    
+    if (cardToPlayIndex > -1) {
+        const card = aiPlayer.hand[cardToPlayIndex];
         // Simulate playing a card to the settlement zone
         setTimeout(() => {
-           setGameState(produce(draft => {
-            const [playedCard] = draft.players[1].hand.splice(cardToPlayIndex, 1);
-            draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: null });
-            draft.players[1].playedCardThisTurn = true;
-          }));
+            setGameState(produce(draft => {
+              if (!draft) return;
+              const [playedCard] = draft.players[1].hand.splice(cardToPlayIndex, 1);
+              // AI dumbly targets opponent player
+              draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: {type: 'player', playerIndex: 0} });
+              draft.players[1].playedCardThisTurn = true;
+            }));
         }, 1000);
-      } else {
-         // No card to play, end turn
+    } else {
+        // No card to play, end turn
         setTimeout(endTurn, 1000);
-      }
     }
-  }, [isPlayerTurn, gameState]);
+  }, [gameState]);
   
   useEffect(() => {
-    let toastMessage = '';
-    if (!isPlayerTurn) return;
+    if (!gameState || gameState.activePlayerIndex !== 0) return;
 
+    let toastMessage = '';
     switch (gameState.gamePhase) {
       case 'selectingBoardSlot':
         toastMessage = '选择一个位置来放置该造物。';
@@ -83,7 +138,15 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     if (toastMessage) {
       toast({ title: toastMessage, duration: 2000 });
     }
-  }, [gameState.gamePhase, toast, isPlayerTurn]);
+  }, [gameState?.gamePhase, gameState?.activePlayerIndex, toast]);
+
+  if (!gameState) {
+    return <div className="flex items-center justify-center h-screen w-full">正在加载战场...</div>;
+  }
+
+  const humanPlayer = gameState.players[0];
+  const aiPlayer = gameState.players[1];
+  const isPlayerTurn = gameState.activePlayerIndex === 0;
 
   const handlePlayCard = (cardIndex: number) => {
     if (!isPlayerTurn || (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget')) {
@@ -93,6 +156,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     // Cancel selection if clicking the same card
     if (gameState.selectedHandCardIndex === cardIndex) {
       setGameState(produce(draft => {
+        if (!draft) return;
         draft.selectedHandCardIndex = null;
         draft.gamePhase = 'main';
       }));
@@ -106,15 +170,8 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
 
     const card = humanPlayer.hand[cardIndex];
     
-    // In a real implementation, you'd check costs like discard, health etc.
-    const canPlay = true; 
-
-    if (!canPlay) {
-      toast({ title: '无法出牌', description: `不满足此牌的打出条件。`, variant: 'destructive' });
-      return;
-    }
-    
     setGameState(produce(draft => {
+      if (!draft) return;
       draft.selectedHandCardIndex = cardIndex;
       if (card.type === '造物牌') {
         draft.gamePhase = 'selectingBoardSlot';
@@ -128,6 +185,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     if (gameState.gamePhase !== 'selectingBoardSlot' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
 
     setGameState(produce(draft => {
+      if (!draft) return;
       const player = draft.players[0];
       if (player.board[slotIndex]) {
         toast({ title: '位置已被占据', description: '请选择一个空的格子。', variant: 'destructive' });
@@ -162,6 +220,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
      if (gameState.gamePhase !== 'selectingTarget' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
 
      setGameState(produce(draft => {
+        if (!draft) return;
         const player = draft.players[0];
         const cardIndex = draft.selectedHandCardIndex!;
         const [card] = player.hand.splice(cardIndex, 1);
@@ -175,10 +234,11 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   }
 
   const endTurn = () => {
-    if (!isPlayerTurn && gameState.activePlayerIndex !== 1) return; // Prevent multiple calls
+    if (!isPlayerTurn && gameState.activePlayerIndex !== 1) return;
     if (isPlayerTurn && gameState.gamePhase !== 'main') return;
 
     setGameState(produce(draft => {
+      if (!draft) return;
       // --- Resolution Phase ---
       // For now, just clear the zone. A real implementation would sort and resolve effects.
       draft.settlementZone = [];
@@ -189,11 +249,15 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         const p2Creature = draft.players[1].board[i];
 
         if (p1Creature && p1Creature.canAttack) {
-          const target = p2Creature ? p2Creature : draft.players[1];
+          const targetCreature = draft.players[1].board[i];
+          const targetPlayer = draft.players[1];
+          const target = targetCreature ? targetCreature : targetPlayer;
           target.health -= p1Creature.attack;
         }
         if (p2Creature && p2Creature.canAttack) {
-          const target = p1Creature ? p1Creature : draft.players[0];
+          const targetCreature = draft.players[0].board[i];
+          const targetPlayer = draft.players[0];
+          const target = targetCreature ? targetCreature : targetPlayer;
           target.health -= p2Creature.attack;
         }
       }
@@ -239,6 +303,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     setShowDeckModal(false);
 
     setGameState(produce(draft => {
+        if (!draft) return;
         const player = draft.players[0];
         if (player.turnHasSwappedCard) return;
 
@@ -259,6 +324,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     if (gameState.gamePhase !== 'selectingHandCard' || gameState.selectedDeckCardIndex === null || humanPlayer.turnHasSwappedCard) return;
 
     setGameState(produce(draft => {
+        if (!draft) return;
         const player = draft.players[0];
         const deckIndex = draft.selectedDeckCardIndex!;
 
