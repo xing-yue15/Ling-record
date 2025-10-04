@@ -56,8 +56,10 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
       totalCost *= parseFloat(modifier.substring(1));
     } else if (modifier.startsWith('/')) {
       totalCost /= parseFloat(modifier.substring(1));
+    } else {
+      totalCost += parseFloat(modifier);
     }
-    description += term.description.spell + ' ';
+    description += (type === '法术牌' ? term.description.spell : term.description.creature) + ' ';
   });
 
   const finalCost = Math.max(1, Math.ceil(totalCost));
@@ -131,13 +133,14 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           <CardTitle className="font-headline">可用词条</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh]">
-            <div className="space-y-4">
+          <ScrollArea className="h-[60vh] lg:h-[70vh]">
+            <div className="space-y-4 pr-4">
               {ownedTerms.map(term => (
                 <div key={term.id} className="p-3 bg-secondary rounded-lg flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold">{term.name}</h3>
-                    <p className="text-xs text-muted-foreground">{term.description.spell}</p>
+                    <h3 className="font-bold">{term.name} <span className="text-xs font-normal text-muted-foreground">({term.type})</span></h3>
+                    <p className="text-xs text-muted-foreground mt-1">法术: {term.description.spell}</p>
+                    <p className="text-xs text-muted-foreground">造物: {term.description.creature}</p>
                   </div>
                   <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
                 </div>
@@ -157,7 +160,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
             {craftingTerms.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10">添加词条以开始制作。</p>
             ) : (
-                <div className="flex flex-wrap gap-2">
+              <ScrollArea className="w-full whitespace-nowrap">
+                <div className="flex w-max space-x-2 pb-4">
                 {craftingTerms.map((term, index) => (
                     <Badge key={index} variant="secondary" className="text-lg p-2">
                     {term.name}
@@ -167,6 +171,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                     </Badge>
                 ))}
                 </div>
+              </ScrollArea>
             )}
              {craftingTerms.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="mt-4">清空</Button>}
           </CardContent>
@@ -183,7 +188,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                     <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
                     <Button onClick={handleGenerateName} disabled={isGenerating}>
                         {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                        <span className="ml-2">AI取名</span>
+                        <span className="ml-2 hidden sm:inline">AI取名</span>
                     </Button>
                </div>
               <div className="flex gap-2">
@@ -202,11 +207,11 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           <CardTitle className="font-headline">当前牌组 ({deck.length}/30)</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh]">
-            <div className="space-y-2">
+          <ScrollArea className="h-[60vh] lg:h-[70vh]">
+            <div className="space-y-2 pr-4">
               {deck.map((card, index) => (
                 <div key={index} className="flex justify-between items-center bg-secondary p-2 rounded-lg">
-                  <span className="truncate">{card.name}</span>
+                  <span className="truncate pr-2">{card.name}</span>
                   <Badge variant="outline">{card.finalCost}</Badge>
                 </div>
               ))}
