@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,8 +20,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { initialTerms } from '@/lib/initial-data';
-
 
 interface GameBoardClientProps {
   matchId: string;
@@ -39,7 +38,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [showDeckModal, setShowDeckModal] = useState(false);
   const { toast } = useToast();
-
+  
   useEffect(() => {
     // In a real app, this would be fetched from a server based on the matchId
     // For now, we use initial static data for demonstration
@@ -85,7 +84,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     };
     setGameState(initialGameState);
   }, [matchId]);
-  
+
   // AI Logic
   useEffect(() => {
     if (!gameState || gameState.activePlayerIndex !== 1 || gameState.gamePhase !== 'main' || gameState.winner) {
@@ -208,7 +207,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
       };
 
       player.board[slotIndex] = newCreature;
-      draft.settlementZone.push({ card, playerId: player.id, target: null });
+      // Creature placement doesn't go to settlement zone, it's immediate
       
       player.playedCardThisTurn = true;
       draft.gamePhase = 'main';
@@ -239,8 +238,39 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
 
     setGameState(produce(draft => {
       if (!draft) return;
+
       // --- Resolution Phase ---
-      // For now, just clear the zone. A real implementation would sort and resolve effects.
+      draft.settlementZone.forEach(action => {
+        // Basic parser for description
+        const damageMatch = action.card.description.match(/造成 (\d+) 点伤害/);
+        const healMatch = action.card.description.match(/恢复 (\d+) 点生命值/);
+
+        if (damageMatch && action.target) {
+            const amount = parseInt(damageMatch[1], 10);
+            const targetPlayer = draft.players[action.target.playerIndex];
+            if (action.target.type === 'player') {
+                targetPlayer.health -= amount;
+            } else if (action.target.type === 'creature' && action.target.slotIndex !== undefined) {
+                const targetCreature = targetPlayer.board[action.target.slotIndex];
+                if (targetCreature) {
+                    targetCreature.health -= amount;
+                }
+            }
+        }
+        
+        if (healMatch && action.target) {
+             const amount = parseInt(healMatch[1], 10);
+            const targetPlayer = draft.players[action.target.playerIndex];
+            if (action.target.type === 'player') {
+                targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + amount);
+            } else if (action.target.type === 'creature' && action.target.slotIndex !== undefined) {
+                const targetCreature = targetPlayer.board[action.target.slotIndex];
+                if (targetCreature) {
+                    targetCreature.health = Math.min(targetCreature.maxHealth, targetCreature.health + amount);
+                }
+            }
+        }
+      });
       draft.settlementZone = [];
 
       // --- Combat Phase ---
@@ -248,17 +278,17 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         const p1Creature = draft.players[0].board[i];
         const p2Creature = draft.players[1].board[i];
 
-        if (p1Creature && p1Creature.canAttack) {
-          const targetCreature = draft.players[1].board[i];
-          const targetPlayer = draft.players[1];
-          const target = targetCreature ? targetCreature : targetPlayer;
-          target.health -= p1Creature.attack;
+        // Creatures attack each other first if opposite
+        if (p1Creature && p1Creature.canAttack && p2Creature) {
+            p2Creature.health -= p1Creature.attack;
+        } else if (p1Creature && p1Creature.canAttack) {
+            draft.players[1].health -= p1Creature.attack;
         }
-        if (p2Creature && p2Creature.canAttack) {
-          const targetCreature = draft.players[0].board[i];
-          const targetPlayer = draft.players[0];
-          const target = targetCreature ? targetCreature : targetPlayer;
-          target.health -= p2Creature.attack;
+
+        if (p2Creature && p2Creature.canAttack && p1Creature) {
+            p1Creature.health -= p2Creature.attack;
+        } else if (p2Creature && p2Creature.canAttack) {
+            draft.players[0].health -= p2Creature.attack;
         }
       }
       
@@ -464,3 +494,5 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     </>
   );
 }
+
+    
