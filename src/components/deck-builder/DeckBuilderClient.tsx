@@ -101,51 +101,54 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
 
     const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
     const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
+    
+    const mainTermResult = processTerms(mainTerms, type);
+    if(mainTermResult.description) descriptionParts.push(mainTermResult.description);
+    attack += mainTermResult.attack;
+    health += mainTermResult.health;
+    baseCost += mainTermResult.cost;
+    multistrikeCount += mainTermResult.multistrike;
+    
+    const limitedTermResults: {limiter: Term, desc: string, cost: number}[] = [];
 
-    // --- Process Main Terms ---
-    const mainResult = processTerms(mainTerms, type);
-    if (mainResult.description) descriptionParts.push(mainResult.description);
-    attack += mainResult.attack;
-    health += mainResult.health;
-    baseCost += mainResult.cost;
-    multistrikeCount += mainResult.multistrike;
-
-    // --- Process Limiter Groups ---
     limiterGroups.forEach(group => {
         const limiter = group.limiter;
         let limiterDescTemplate = limiter.description.spell || limiter.description.creature || '';
-        
         const childResult = processTerms(group.children, type);
         
-        const naturalDesc = childResult.description.replace(limiter.name, "").trim().replace(/^：/, "").trim();
+        let naturalDesc = childResult.description;
         
         const finalLimiterDesc = limiterDescTemplate
             .replace(/\[触发特定效果\]/g, naturalDesc)
             .replace(/\?\?/g, naturalDesc);
 
-        if(finalLimiterDesc) {
-            descriptionParts.push(finalLimiterDesc);
-        }
-
-        // Limiter Cost Modifiers
+        let groupCost = 0;
         if (typeof limiter.cost === 'string') {
             if (limiter.cost.startsWith('*')) {
                 const multiplier = parseFloat(limiter.cost.substring(1));
-                baseCost += childResult.cost * multiplier;
+                groupCost = childResult.cost * multiplier;
             } else if (limiter.cost.startsWith('/')) {
                 const divisor = parseFloat(limiter.cost.substring(1));
                 if (divisor !== 0) {
-                    baseCost += Math.ceil(childResult.cost / divisor);
+                    groupCost = Math.ceil(childResult.cost / divisor);
                 }
             }
         } else if(typeof limiter.cost === 'number'){
-            baseCost += childResult.cost + limiter.cost;
+            groupCost = childResult.cost + limiter.cost;
         }
+
+        limitedTermResults.push({limiter: limiter, desc: finalLimiterDesc, cost: groupCost});
     });
+
+    baseCost += limitedTermResults.reduce((acc, r) => acc + r.cost, 0);
+
+    const limitedDescs = limitedTermResults.map(r => r.desc).join('，');
+    if (limitedDescs) {
+        descriptionParts.push(limitedDescs);
+    }
     
     let totalCost = baseCost;
 
-    // Apply Multistrike cost
     if (multistrikeCount > 0) {
         totalCost = totalCost * (multistrikeCount + 1);
     }
@@ -185,7 +188,6 @@ const CraftingAreaContent = ({
       const key = term.id;
       
       if (isGroup || !isNumeric) {
-         // Use a unique key for non-numeric and group items to prevent grouping
         termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
       } else {
         if (!termMap[key]) {
@@ -464,7 +466,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-grow min-h-0">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow min-h-0">
         <UICard className="bg-card/50 flex flex-col">
           <CardHeader>
@@ -601,7 +603,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
           </Tabs>
         </div>
       </div>
-        <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
+        <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
             <Button variant="outline" asChild>
                 <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
                     <ArrowLeft className="mr-2" />
