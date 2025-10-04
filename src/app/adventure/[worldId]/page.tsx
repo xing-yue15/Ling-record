@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, BrainCircuit, Settings } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useParams } from 'next/navigation';
 
 const enemies = [
   { id: 'goblin-artificer', name: '哥布林工匠', description: '一个狡猾的哥布林，擅长制造爆炸装置。', difficulty: '简单', artId: 'enemy-goblin' },
@@ -16,8 +17,9 @@ const enemies = [
   { id: 'shadow-specter', name: '暗影幽灵', description: '一个可怕的怨灵，能够吸取生命并散播恐惧。', difficulty: '困难', artId: 'enemy-specter' },
 ];
 
-export default function AdventureWorldPage({ params }: { params: { worldId: string } }) {
-  const { worldId } = params;
+export default function AdventureWorldPage() {
+  const params = useParams();
+  const worldId = params.worldId as string;
 
   // In a real app, you might fetch world details and enemies based on worldId
   const worldName = worldId === 'magic-world' ? '魔幻世界' : '未知世界';
@@ -110,5 +112,3 @@ export default function AdventureWorldPage({ params }: { params: { worldId: stri
     </div>
   );
 }
-
-    
