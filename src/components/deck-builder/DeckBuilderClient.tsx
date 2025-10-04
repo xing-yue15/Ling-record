@@ -464,8 +464,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
 
   return (
-    <div className="flex flex-col flex-grow min-h-0">
-      <div className="flex flex-row flex-grow gap-8 min-h-0">
+    <div className="flex flex-row flex-grow gap-8 min-h-0">
         {/* Left Column: Available Terms */}
         <UICard className="w-1/4 bg-card/50 flex flex-col">
           <CardHeader>
@@ -501,7 +500,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 min-h-0 flex flex-col space-y-8">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
               <div>
                 <UICard className="bg-card/50">
                   <CardHeader>
@@ -604,18 +603,5 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             </div>
         </div>
       </div>
-      <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
-          <Button variant="outline" asChild>
-              <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
-                  <ArrowLeft className="mr-2" />
-                  返回
-              </Link>
-          </Button>
-          <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
-              <Save className="mr-2"/>
-              保存牌组
-          </Button>
-      </div>
-    </div>
   );
 }
