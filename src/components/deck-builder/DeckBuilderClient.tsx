@@ -123,8 +123,8 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
       .trim();
 
     if(finalLimiterDesc) {
-      const naturalDesc = `${limiter.name}：${finalLimiterDesc}`;
-      descriptionParts.push(naturalDesc);
+       const naturalDesc = finalLimiterDesc.replace(limiter.name, "").trim().replace(/^：/, "").trim();
+       descriptionParts.push(naturalDesc.charAt(0).toUpperCase() + naturalDesc.slice(1));
     }
     
 
@@ -160,7 +160,7 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     terms,
     finalCost,
     type,
-    description: descriptionParts.join('，').trim(),
+    description: descriptionParts.join('，'),
     attack,
     health,
     artId: 'card-art-1',
@@ -461,8 +461,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             <CardTitle className="font-headline">可用词条</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="space-y-4 pr-4">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-4">
                 {ownedTerms.map(term => (
                   <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
                     <div>
@@ -489,7 +489,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex-grow">
+            <TabsContent value="creator" className="mt-4 flex-grow overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
                 <div className="space-y-8 flex flex-col">
                   <UICard className="bg-card/50">
@@ -555,18 +555,16 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               </div>
             </TabsContent>
 
-            <TabsContent value="deck" className="mt-4 flex-grow">
+            <TabsContent value="deck" className="mt-4 flex-grow overflow-hidden">
               <UICard className="bg-card/50 h-full flex flex-col">
                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
-                      
                     </div>
-                   
                 </CardHeader>
                 <CardContent className="flex-grow overflow-hidden">
-                  <ScrollArea className="h-full">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
+                  <ScrollArea className="h-full pr-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                       {deck.map((card, index) => (
                         <div key={index} className="relative group/deckcard">
                           <GameCard card={card} />
@@ -608,5 +606,3 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </div>
   );
 }
-
-    
