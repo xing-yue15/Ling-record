@@ -23,6 +23,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
         graveyard: [],
         board: [null, null, null, null, null, null],
         playedCardThisTurn: false,
+        turnHasSwappedCard: false,
       },
       {
         id: 'opponent',
@@ -34,6 +35,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
         graveyard: [],
         board: [null, null, null, null, null, null],
         playedCardThisTurn: false,
+        turnHasSwappedCard: false,
       },
     ],
     turnCount: 1,
@@ -44,7 +46,6 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
     gamePhase: 'main',
     selectedHandCardIndex: null,
     selectedDeckCardIndex: null,
-    turnHasSwappedCard: false,
     winner: null,
   }
 
