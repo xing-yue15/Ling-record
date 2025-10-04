@@ -103,8 +103,6 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
   let attack = 0;
   let health = 0;
   let multistrikeCount = 0;
-  let costMultiplier = 1;
-  let costDivisor = 1;
 
   const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
   const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
@@ -114,35 +112,36 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
   if (mainResult.description) descriptionParts.push(mainResult.description);
   attack += mainResult.attack;
   health += mainResult.health;
-  totalCost += mainResult.cost;
+  let baseCost = mainResult.cost;
   multistrikeCount += mainResult.multistrike;
-
+  
   // --- Process Limiter Groups ---
   limiterGroups.forEach(group => {
     const limiter = group.limiter;
     let limiterDescTemplate = limiter.description.spell || limiter.description.creature || '';
     
     const childResult = processTerms(group.children, type);
-    totalCost += childResult.cost;
     
-    const finalLimiterDesc = `[${limiter.name}]: ${limiterDescTemplate.replace('??', childResult.description)}`;
+    const finalLimiterDesc = limiterDescTemplate.replace('??', childResult.description);
     descriptionParts.push(finalLimiterDesc);
 
     // Limiter Cost Modifiers
     if (typeof limiter.cost === 'string') {
         if (limiter.cost.startsWith('*')) {
-            costMultiplier *= parseFloat(limiter.cost.substring(1));
+            const multiplier = parseFloat(limiter.cost.substring(1));
+            baseCost += childResult.cost * multiplier;
         } else if (limiter.cost.startsWith('/')) {
-            costDivisor *= parseFloat(limiter.cost.substring(1));
+            const divisor = parseFloat(limiter.cost.substring(1));
+            if (divisor !== 0) {
+              baseCost += childResult.cost / divisor;
+            }
         }
+    } else if(typeof limiter.cost === 'number'){
+        baseCost += childResult.cost + limiter.cost;
     }
   });
   
-  // Apply cost modifiers from limiters
-  if (costDivisor !== 0) {
-      totalCost = totalCost / costDivisor;
-  }
-  totalCost = totalCost * costMultiplier;
+  totalCost = baseCost;
 
   // Apply Multistrike cost
   if (multistrikeCount > 0) {
@@ -180,13 +179,10 @@ const CraftingAreaContent = ({
     terms.forEach((item, index) => {
       const isGroup = 'limiter' in item;
       const term = isGroup ? (item as LimiterGroup).limiter : (item as Term);
-      const isNumeric = term.name.includes('X');
-      const isUnique = !isNumeric || term.type === '限定';
-      
+      const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike';
       const key = term.id;
-
-      if (isGroup || isUnique) {
-        // Unique key for groups and non-numeric/limiter terms to prevent grouping
+      
+      if (isGroup || !isNumeric) {
         termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
       } else {
         if (!termMap[key]) {
@@ -236,7 +232,7 @@ const CraftingAreaContent = ({
         }
         
         const term = item as Term;
-        const isNumeric = term.name.includes('X');
+        const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike';
         return (
           <div key={term.id + originalIndex} className="relative inline-block">
             <Badge variant="secondary" className="text-lg p-3 pr-8">
@@ -326,7 +322,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       return;
     }
     
-    const isNumericTerm = term.name.includes('X');
+    const isNumericTerm = String(term.cost).includes('X') || term.id === 'multistrike';
     
     if (!isNumericTerm) {
       const currentArea = craftingMode === 'main' ? mainTerms : limiterTerms;
@@ -365,7 +361,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     const termToRemove = area.find((t, i) => !('limiter' in t) && t.id === termId);
     if (!termToRemove) return;
 
-    const isNumeric = (termToRemove as Term).name.includes('X');
+    const isNumeric = String((termToRemove as Term).cost).includes('X') || termToRemove.id === 'multistrike';
     if (isNumeric) {
       let lastIndex = -1;
       for (let i = area.length - 1; i >= 0; i--) {
@@ -459,14 +455,14 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
 
   return (
-    <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full pb-20">
-        <UICard className="bg-card/50">
+    <div className="flex flex-col h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow overflow-hidden">
+        <UICard className="bg-card/50 flex flex-col">
           <CardHeader>
             <CardTitle className="font-headline">可用词条</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[calc(100vh-25rem)]">
+          <CardContent className="flex-grow overflow-hidden">
+            <ScrollArea className="h-full">
               <div className="space-y-4 pr-4">
                 {ownedTerms.map(term => (
                   <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
@@ -487,16 +483,16 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
           </CardContent>
         </UICard>
 
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="creator" className="w-full">
+        <div className="lg:col-span-2 flex flex-col">
+          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-8">
+            <TabsContent value="creator" className="mt-4 flex-grow">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+                <div className="space-y-8 flex flex-col">
                   <UICard className="bg-card/50">
                     <CardHeader>
                       <div className="flex items-center gap-2 justify-between">
@@ -560,8 +556,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               </div>
             </TabsContent>
 
-            <TabsContent value="deck" className="mt-4">
-              <UICard className="bg-card/50">
+            <TabsContent value="deck" className="mt-4 flex-grow">
+              <UICard className="bg-card/50 h-full flex flex-col">
                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
@@ -572,8 +568,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                     </div>
                     <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2 h-2" />
                 </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[calc(100vh-33rem)]">
+                <CardContent className="flex-grow overflow-hidden">
+                  <ScrollArea className="h-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
                       {deck.map((card, index) => (
                         <div key={index} className="relative group/deckcard">
@@ -601,7 +597,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
           </Tabs>
         </div>
       </div>
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
+        <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
             <Button variant="outline" asChild>
                 <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
                     <ArrowLeft className="mr-2" />
@@ -613,6 +609,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                 保存牌组
             </Button>
         </div>
-    </>
+    </div>
   );
 }

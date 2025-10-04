@@ -9,12 +9,14 @@ export default function DeckBuilderPage() {
   const ownedTerms = initialTerms;
 
   return (
-    <div className="container mx-auto py-8 px-4 h-screen">
-      <div className="text-center mb-8">
+    <div className="container mx-auto py-8 px-4 h-screen flex flex-col">
+      <div className="text-center mb-8 flex-shrink-0">
         <h1 className="font-headline text-4xl font-bold text-primary">构筑牌组</h1>
         <p className="text-foreground/80 mt-2">在这里自由练习并保存你的牌组。</p>
       </div>
-      <DeckBuilderClient ownedTerms={ownedTerms} />
+      <div className="flex-grow overflow-hidden">
+        <DeckBuilderClient ownedTerms={ownedTerms} />
+      </div>
     </div>
   );
 }

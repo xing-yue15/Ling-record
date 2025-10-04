@@ -102,7 +102,6 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     const cardToPlayIndex = aiPlayer.hand.findIndex(card => true); // In a real game, check cost
     
     if (cardToPlayIndex > -1) {
-        const card = aiPlayer.hand[cardToPlayIndex];
         // Simulate playing a card to the settlement zone
         setTimeout(() => {
             setGameState(produce(draft => {
@@ -117,7 +116,8 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         // No card to play, end turn
         setTimeout(endTurn, 1000);
     }
-  }, [gameState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.activePlayerIndex, gameState?.gamePhase, gameState?.winner]);
   
   useEffect(() => {
     if (!gameState || gameState.activePlayerIndex !== 0) return;
@@ -380,7 +380,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => window.location.href = '/adventure'}>返回冒险</AlertDialogAction>
+                    <AlertDialogAction onClick={() => window.location.href = '/worlds'}>返回世界选择</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -447,7 +447,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         </div>
         
         {/* Player's Hand */}
-        <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-5xl h-56 flex justify-center items-end gap-2 pb-4">
+        <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-4xl h-56 flex justify-center items-end gap-2 pb-4">
           {humanPlayer.hand.map((card, i) => (
               <div 
                   key={card.id + i} 
@@ -456,7 +456,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
-                      transform: `translateX(${(i - humanPlayer.hand.length/2) * 25}px) rotate(${(i - humanPlayer.hand.length/2) * 3}deg)`,
+                      transform: `translateX(${(i - humanPlayer.hand.length/2) * 15}px) rotate(${(i - humanPlayer.hand.length/2) * 2}deg)`,
                       transformOrigin: 'bottom center',
                   }}
                   onClick={() => gameState.gamePhase === 'selectingHandCard' ? handleHandCardSwap(i) : handlePlayCard(i)}
@@ -494,5 +494,3 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     </>
   );
 }
-
-    
