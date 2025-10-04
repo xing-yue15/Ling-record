@@ -257,6 +257,25 @@ const CraftingAreaContent = ({
   );
 };
 
+const useHorizontalScroll = () => {
+    const elRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = elRef.current;
+        if (el) {
+            const onWheel = (e: WheelEvent) => {
+                if (e.deltaY === 0) return;
+                e.preventDefault();
+                el.scrollTo({
+                    left: el.scrollLeft + e.deltaY,
+                });
+            };
+            el.addEventListener("wheel", onWheel);
+            return () => el.removeEventListener("wheel", onWheel);
+        }
+    }, []);
+    return elRef;
+}
+
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const searchParams = useSearchParams();
@@ -270,26 +289,15 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const enemyId = searchParams.get('enemyId');
+  const availableTermsRef = useHorizontalScroll();
+  const craftingAreaRef = useHorizontalScroll();
+
 
   const termsInCurrentCraftingArea = useMemo(() => {
     return craftingMode === 'main' ? mainTerms : limiterTerms;
   }, [mainTerms, limiterTerms, craftingMode]);
   
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const handleWheel = (e: WheelEvent) => {
-        if (e.deltaY === 0) return;
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-      };
-      container.addEventListener('wheel', handleWheel);
-      return () => container.removeEventListener('wheel', handleWheel);
-    }
-  }, []);
-
   const previewCard = useMemo(() => {
       let allTerms: CraftingItem[] = [...mainTerms];
       if (craftingMode !== 'main' && craftingMode.originalIndex === undefined && limiterTerms.length > 0) {
@@ -462,24 +470,24 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             <CardTitle className="font-headline">可用词条</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow min-h-0">
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-4">
-                {ownedTerms.map(term => (
-                  <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold flex items-center gap-2">
-                        {term.name} 
-                        <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
-                        <Badge variant="outline">消耗: {term.cost}</Badge>
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">法术: {term.description.spell}</p>
-                      <p className="text-xs text-muted-foreground">造物: {term.description.creature}</p>
+             <div ref={availableTermsRef} className="overflow-x-auto whitespace-nowrap pb-4 h-full">
+                <div className="flex flex-col flex-wrap h-full gap-4">
+                  {ownedTerms.map(term => (
+                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between w-64 flex-shrink-0">
+                      <div>
+                        <h3 className="font-bold flex items-center gap-2">
+                          {term.name} 
+                          <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
+                          <Badge variant="outline">消耗: {term.cost}</Badge>
+                        </h3>
+                         <p className="text-xs text-muted-foreground mt-1 whitespace-normal">法术: {term.description.spell}</p>
+                         <p className="text-xs text-muted-foreground whitespace-normal">造物: {term.description.creature}</p>
+                      </div>
+                      <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
                     </div>
-                    <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  ))}
+                </div>
+            </div>
           </CardContent>
         </UICard>
 
@@ -513,7 +521,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                             {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
                           </p>
                       ) : (
-                        <div ref={scrollContainerRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                        <div ref={craftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
                            <CraftingAreaContent 
                              terms={termsInCurrentCraftingArea}
                              onRemove={removeTermFromCrafting}
@@ -558,7 +566,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
             <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
               <UICard className="bg-card/50 h-full flex flex-col">
-                <CardHeader>
+                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
                     </div>
@@ -607,3 +615,5 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </div>
   );
 }
+
+    

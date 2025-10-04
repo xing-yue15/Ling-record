@@ -85,44 +85,51 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     setGameState(initialGameState);
   }, [matchId]);
 
-  // AI Logic
+  // AI Logic for playing a card
   useEffect(() => {
-    if (!gameState || gameState.activePlayerIndex !== 1 || gameState.gamePhase !== 'main' || gameState.winner) {
+    if (!gameState || gameState.activePlayerIndex !== 1 || gameState.players[1].playedCardThisTurn || gameState.winner) {
       return;
     }
-
-    const aiPlayer = gameState.players[1];
-    if (aiPlayer.playedCardThisTurn) {
-        // AI already played, end its turn
-        setTimeout(endTurn, 1000);
-        return;
-    };
-
+  
     // Simple AI: play the first possible card
+    const aiPlayer = gameState.players[1];
     const cardToPlayIndex = aiPlayer.hand.findIndex(card => true); // In a real game, check cost
     
     if (cardToPlayIndex > -1) {
-        // Simulate playing a card to the settlement zone
-        setTimeout(() => {
-            setGameState(produce(draft => {
-              if (!draft) return;
-              const [playedCard] = draft.players[1].hand.splice(cardToPlayIndex, 1);
-              // AI dumbly targets opponent player
-              draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: {type: 'player', playerIndex: 0} });
-              draft.players[1].playedCardThisTurn = true;
-            }));
-            
-            // AI ends its turn after playing a card
-            setTimeout(endTurn, 1500);
-
-        }, 1000);
-    } else {
-        // No card to play, end turn
-        setTimeout(endTurn, 1000);
+      setTimeout(() => {
+        setGameState(produce(draft => {
+          if (!draft) return;
+          const [playedCard] = draft.players[1].hand.splice(cardToPlayIndex, 1);
+          
+          if (playedCard.type === '造物牌') {
+            const emptySlotIndex = draft.players[1].board.findIndex(slot => slot === null);
+            if (emptySlotIndex !== -1) {
+              const newCreature: Creature = {
+                id: `creature-${Date.now()}`,
+                cardId: playedCard.id,
+                name: playedCard.name,
+                attack: playedCard.attack ?? 0,
+                health: playedCard.health ?? 1,
+                maxHealth: playedCard.health ?? 1,
+                type: '造物牌',
+                artId: playedCard.artId,
+                canAttack: false,
+              };
+              draft.players[1].board[emptySlotIndex] = newCreature;
+            }
+          } else { // Spell card
+            // AI dumbly targets opponent player
+            draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: {type: 'player', playerIndex: 0} });
+          }
+          
+          draft.players[1].playedCardThisTurn = true;
+        }));
+      }, 1000);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState?.activePlayerIndex, gameState?.gamePhase, gameState?.winner]);
+  }, [gameState?.turnCount, gameState?.activePlayerIndex]);
   
+
   useEffect(() => {
     if (!gameState || gameState.activePlayerIndex !== 0) return;
 
@@ -152,7 +159,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   const isPlayerTurn = gameState.activePlayerIndex === 0;
 
   const handlePlayCard = (cardIndex: number) => {
-    if (!isPlayerTurn || (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget')) {
+    if (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget') {
       return;
     }
     
@@ -185,7 +192,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   };
 
   const handleBoardSlotClick = (slotIndex: number) => {
-    if (gameState.gamePhase !== 'selectingBoardSlot' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
+    if (gameState.gamePhase !== 'selectingBoardSlot' || gameState.selectedHandCardIndex === null) return;
 
     setGameState(produce(draft => {
       if (!draft) return;
@@ -220,7 +227,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   };
 
   const handleTargetClick = (target: {type: 'player' | 'creature', playerIndex: number, slotIndex?: number}) => {
-     if (gameState.gamePhase !== 'selectingTarget' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
+     if (gameState.gamePhase !== 'selectingTarget' || gameState.selectedHandCardIndex === null) return;
 
      setGameState(produce(draft => {
         if (!draft) return;
@@ -237,8 +244,11 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
   }
 
   const endTurn = () => {
-    if (!isPlayerTurn && gameState.activePlayerIndex !== 1) return;
-    if (isPlayerTurn && gameState.gamePhase !== 'main') return;
+    if (gameState.gamePhase !== 'main') return;
+    if (humanPlayer.playedCardThisTurn === false) {
+      toast({ title: "必须出牌", description: "每个回合你必须打出一张牌。", variant: "destructive" });
+      return;
+    }
 
     setGameState(produce(draft => {
       if (!draft) return;
@@ -317,19 +327,15 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
 
 
       // --- End of Turn Phase ---
-      const previousPlayerIndex = draft.activePlayerIndex;
-      draft.players[previousPlayerIndex].board.forEach(c => {
-        if(c) c.canAttack = true; // Wake up creatures
-      });
-      draft.players[previousPlayerIndex].playedCardThisTurn = false;
-      draft.players[previousPlayerIndex].turnHasSwappedCard = false;
+      draft.players.forEach(p => {
+        p.board.forEach(c => {
+          if (c) c.canAttack = true; // Wake up creatures
+        });
+        p.playedCardThisTurn = false;
+        p.turnHasSwappedCard = false;
+      })
       
-      // Switch active player
-      draft.activePlayerIndex = 1 - previousPlayerIndex;
-      
-      if (draft.activePlayerIndex === 0) {
-        draft.turnCount += 1;
-      }
+      draft.turnCount += 1;
     }));
   };
 
@@ -401,14 +407,14 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
             isOpponent={true} 
             onBoardClick={slotIndex => handleTargetClick({ type: 'creature', playerIndex: 1, slotIndex })}
             onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 1})}
-            isTargeting={isPlayerTurn && gameState.gamePhase === 'selectingTarget'}
+            isTargeting={gameState.gamePhase === 'selectingTarget'}
           />
         </div>
 
         {/* Center Action Bar */}
         <div className="flex items-center justify-between h-48 border-y-2 border-primary/20 my-1 px-4 gap-4">
           <div className="flex flex-col items-center w-40">
-              <Button size="lg" className="w-full h-16 text-lg font-headline" onClick={endTurn} disabled={!isPlayerTurn || gameState.gamePhase !== 'main'}>结束回合</Button>
+              <Button size="lg" className="w-full h-16 text-lg font-headline" onClick={endTurn} disabled={gameState.gamePhase !== 'main'}>结束回合</Button>
           </div>
           
           {/* Settlement Zone */}
@@ -427,7 +433,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                 variant="outline"
                 className="w-full h-16 flex flex-col gap-1 items-center justify-center text-lg font-headline"
                 onClick={() => !humanPlayer.turnHasSwappedCard && setShowDeckModal(true)}
-                disabled={!isPlayerTurn || humanPlayer.turnHasSwappedCard}
+                disabled={humanPlayer.turnHasSwappedCard}
               >
                   <div className="flex items-center gap-2">
                       <Library />
@@ -445,8 +451,8 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
               isOpponent={false} 
               onBoardClick={handleBoardSlotClick} 
               onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 0 })}
-              isPlacing={isPlayerTurn && gameState.gamePhase === 'selectingBoardSlot'}
-              isTargeting={isPlayerTurn && gameState.gamePhase === 'selectingTarget'}
+              isPlacing={gameState.gamePhase === 'selectingBoardSlot'}
+              isTargeting={gameState.gamePhase === 'selectingTarget'}
           />
         </div>
         
@@ -456,12 +462,13 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
               <div 
                   key={card.id + i} 
                   className={cn("w-40 h-56 transition-all duration-300 hover:-translate-y-12 hover:scale-110 relative",
-                      (isPlayerTurn && (gameState.gamePhase === 'main' || gameState.gamePhase === 'selectingHandCard' || gameState.gamePhase === 'selectingTarget')) ? "cursor-pointer" : "cursor-not-allowed",
+                      (gameState.gamePhase === 'main' || gameState.gamePhase === 'selectingHandCard' || gameState.gamePhase === 'selectingTarget') ? "cursor-pointer" : "cursor-not-allowed",
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
-                      transform: `translateX(${(i - (humanPlayer.hand.length - 1) / 2) * -15}px) rotate(${(i - (humanPlayer.hand.length - 1) / 2) * 2}deg)`,
+                      transform: `translateX(${(i - (humanPlayer.hand.length - 1) / 2) * -20}px) rotate(${(i - (humanPlayer.hand.length - 1) / 2) * 2.5}deg)`,
                       transformOrigin: 'bottom center',
+                      marginLeft: i > 0 ? '-1rem' : '0'
                   }}
                   onClick={() => gameState.gamePhase === 'selectingHandCard' ? handleHandCardSwap(i) : handlePlayCard(i)}
               >
@@ -498,3 +505,5 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     </>
   );
 }
+
+    
