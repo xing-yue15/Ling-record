@@ -1,3 +1,5 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,15 +11,23 @@ interface PlayerAreaProps {
   player: Player;
   isOpponent: boolean;
   onBoardClick?: (index: number) => void;
+  onPlayerClick?: () => void;
   isPlacing?: boolean;
+  isTargeting?: boolean;
 }
 
-export function PlayerArea({ player, isOpponent, onBoardClick, isPlacing = false }: PlayerAreaProps) {
+export function PlayerArea({ player, isOpponent, onBoardClick, onPlayerClick, isPlacing = false, isTargeting = false }: PlayerAreaProps) {
   return (
     <div className={cn("flex flex-col h-full w-full justify-center")}>
       <div className="flex-grow flex items-center justify-between px-8">
         {/* Player Info */}
-        <div className="flex flex-col items-center gap-2 w-24">
+        <div 
+          className={cn(
+            "flex flex-col items-center gap-2 w-24",
+            isTargeting && "cursor-pointer rounded-lg p-2 transition-colors hover:bg-red-500/20"
+          )}
+          onClick={onPlayerClick}
+        >
             <Avatar className="w-20 h-20 border-4 border-primary/80 shadow-lg">
                 <AvatarImage src={`https://picsum.photos/seed/${player.id}/100`} />
                 <AvatarFallback>{isOpponent ? 'OP' : 'PL'}</AvatarFallback>
@@ -38,12 +48,22 @@ export function PlayerArea({ player, isOpponent, onBoardClick, isPlacing = false
                         "w-28 h-40 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center bg-black/20 transition-colors",
                         !isOpponent && onBoardClick && "cursor-pointer",
                         isPlacing && !player.board[i] && "border-primary/80 bg-primary/20 animate-pulse",
+                        isTargeting && player.board[i] && "cursor-pointer hover:bg-red-500/20",
+                        isTargeting && !player.board[i] && "cursor-not-allowed",
                         player.board[i] && isPlacing && "cursor-not-allowed"
                     )}
-                    onClick={() => !isOpponent && onBoardClick?.(i)}
+                    onClick={() => {
+                        if (isTargeting && player.board[i]) {
+                            onBoardClick?.(i);
+                        } else if (!isOpponent && isPlacing) {
+                            onBoardClick?.(i);
+                        } else if (isTargeting && isOpponent) {
+                            onBoardClick?.(i);
+                        }
+                    }}
                 >
                     {player.board[i] ? <GameCard card={player.board[i]} className="w-full h-full"/> : (
-                        isPlacing && <span className='text-primary text-sm'>放置</span>
+                        isPlacing && !isOpponent && <span className='text-primary text-sm'>放置</span>
                     )}
                 </div>
             ))}

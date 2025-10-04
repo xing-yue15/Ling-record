@@ -37,6 +37,8 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
 
   useEffect(() => {
     let toastMessage = '';
+    if (!isPlayerTurn) return;
+
     switch (gameState.gamePhase) {
       case 'selectingBoardSlot':
         toastMessage = '选择一个位置来放置该造物。';
@@ -49,22 +51,33 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         break;
     }
     if (toastMessage) {
-      toast({ title: toastMessage });
+      toast({ title: toastMessage, duration: 2000 });
     }
-  }, [gameState.gamePhase, toast]);
+  }, [gameState.gamePhase, toast, isPlayerTurn]);
 
   const handlePlayCard = (cardIndex: number) => {
-    if (!isPlayerTurn || gameState.gamePhase !== 'main' || activePlayer.playedCardThisTurn) {
-        if(activePlayer.playedCardThisTurn) {
-            toast({title: "本回合已出过牌", description: "每回合只能出一张牌。", variant: 'destructive'});
-        }
+    if (!isPlayerTurn || (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget')) {
+      return;
+    }
+
+    if (activePlayer.playedCardThisTurn && gameState.gamePhase === 'main') {
+        toast({title: "本回合已出过牌", description: "每回合只能出一张牌。", variant: 'destructive'});
+        return;
+    }
+    
+    // Cancel selection if clicking the same card
+    if (gameState.selectedHandCardIndex === cardIndex) {
+      setGameState(produce(draft => {
+        draft.selectedHandCardIndex = null;
+        draft.gamePhase = 'main';
+      }));
       return;
     }
 
     const card = activePlayer.hand[cardIndex];
     
     // In a real implementation, you'd check costs like discard, health etc.
-    const canPlay = true;
+    const canPlay = true; 
 
     if (!canPlay) {
       toast({ title: '无法出牌', description: `不满足此牌的打出条件。`, variant: 'destructive' });
@@ -76,13 +89,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
       if (card.type === '造物牌') {
         draft.gamePhase = 'selectingBoardSlot';
       } else { // Spell card
-        // For simplicity, spell auto-targets opponent player.
-        // A full implementation would set phase to 'selectingTarget'
-        const player = draft.players[draft.activePlayerIndex];
-        const [playedCard] = player.hand.splice(cardIndex, 1);
-        draft.settlementZone.push({ card: playedCard, playerId: player.id });
-        player.playedCardThisTurn = true;
-        draft.selectedHandCardIndex = null;
+        draft.gamePhase = 'selectingTarget';
       }
     }));
   };
@@ -121,8 +128,25 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     }));
   };
 
+  const handleTargetClick = (target: {type: 'player' | 'creature', playerIndex: number, slotIndex?: number}) => {
+     if (gameState.gamePhase !== 'selectingTarget' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
+
+     setGameState(produce(draft => {
+        const player = draft.players[draft.activePlayerIndex];
+        const cardIndex = draft.selectedHandCardIndex!;
+        const [card] = player.hand.splice(cardIndex, 1);
+        
+        // Here you would add the target info to the settlement zone
+        draft.settlementZone.push({ card, playerId: player.id, target });
+
+        player.playedCardThisTurn = true;
+        draft.gamePhase = 'main';
+        draft.selectedHandCardIndex = null;
+     }));
+  }
+
   const endTurn = () => {
-    if (!isPlayerTurn || (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'resolution' && gameState.gamePhase !== 'combat' )) return;
+    if (!isPlayerTurn || gameState.gamePhase !== 'main') return;
 
     setGameState(produce(draft => {
       // --- Resolution Phase ---
@@ -135,72 +159,71 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         const p2Creature = draft.players[1].board[i];
 
         if (p1Creature && p1Creature.canAttack) {
-          if (p2Creature) {
-            p2Creature.health -= p1Creature.attack;
-          } else {
-            draft.players[1].health -= p1Creature.attack;
-          }
+          const target = p2Creature ? p2Creature : draft.players[1];
+          target.health -= p1Creature.attack;
         }
         if (p2Creature && p2Creature.canAttack) {
-          if (p1Creature) {
-            p1Creature.health -= p2Creature.attack;
-          } else {
-            draft.players[0].health -= p2Creature.attack;
-          }
+          const target = p1Creature ? p1Creature : draft.players[0];
+          target.health -= p2Creature.attack;
         }
       }
       
-      // Remove dead creatures
-      draft.players.forEach(player => {
+      // Remove dead creatures and check for winner
+      let winnerFound = false;
+      draft.players.forEach((player, pIndex) => {
         for(let i=0; i < player.board.length; i++) {
             if(player.board[i] && player.board[i]!.health <= 0) {
-                player.graveyard.push(player.board[i]! as unknown as CardData); // A bit of a type cheat
+                player.graveyard.push(player.board[i]! as unknown as CardData);
                 player.board[i] = null;
             }
         }
+        if (player.health <= 0) {
+            draft.winner = draft.players[1 - pIndex];
+            draft.gamePhase = 'end';
+            winnerFound = true;
+        }
       });
+      if (winnerFound) return;
 
 
       // --- End of Turn Phase ---
-      // Check for game over
-      if (draft.players[0].health <= 0) {
-        draft.winner = draft.players[1];
-        draft.gamePhase = 'end';
-        return;
-      }
-      if (draft.players[1].health <= 0) {
-        draft.winner = draft.players[0];
-        draft.gamePhase = 'end';
-        return;
-      }
-      
       draft.turnCount += 1;
       
-      // Reset per-turn flags and wake up creatures for both players
-      draft.players.forEach(p => {
-        p.playedCardThisTurn = false;
-        p.turnHasSwappedCard = false;
-        p.board.forEach(c => {
-          if(c) c.canAttack = true;
-        });
+      // Reset per-turn flags and wake up creatures for current player
+      const currentPlayer = draft.players[draft.activePlayerIndex];
+      currentPlayer.playedCardThisTurn = false;
+      currentPlayer.turnHasSwappedCard = false;
+      currentPlayer.board.forEach(c => {
+        if(c) c.canAttack = true;
       });
+
+      // Switch active player
+      draft.activePlayerIndex = 1 - draft.activePlayerIndex;
       
       // Fatigue damage
-      draft.players.forEach(p => {
-          if (p.deck.length === 0) {
-              p.health -= Math.ceil(p.maxHealth * 0.2);
-          }
-      });
+      if (currentPlayer.deck.length === 0) {
+          currentPlayer.health -= Math.ceil(currentPlayer.maxHealth * 0.2);
+      }
     }));
   };
 
   const handleDeckCardSelect = (deckCardIndex: number) => {
-    setGameState(produce(draft => {
-      draft.selectedDeckCardIndex = deckCardIndex;
-      draft.gamePhase = 'selectingHandCard';
-    }));
     setShowDeckModal(false);
-    toast({title: "选择一张手牌", description: "选择一张手牌与牌库中的卡牌交换。"});
+
+    setGameState(produce(draft => {
+        const player = draft.players[draft.activePlayerIndex];
+        if (player.hand.length < 6) {
+            // Add card to hand
+            const [selectedCard] = player.deck.splice(deckCardIndex, 1);
+            player.hand.push(selectedCard);
+            player.turnHasSwappedCard = true;
+        } else {
+            // Prepare to swap
+            draft.selectedDeckCardIndex = deckCardIndex;
+            draft.gamePhase = 'selectingHandCard';
+            toast({title: "选择一张手牌进行交换", description: "选择一张手牌与牌库中的卡牌交换。"});
+        }
+    }));
   };
 
   const handleHandCardSwap = (handCardIndex: number) => {
@@ -210,17 +233,14 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
         const player = draft.players[draft.activePlayerIndex];
         const deckIndex = draft.selectedDeckCardIndex!;
 
-        // Swap
         const handCard = player.hand[handCardIndex];
         const deckCard = player.deck[deckIndex];
         player.hand[handCardIndex] = deckCard;
         player.deck[deckIndex] = handCard;
         
-        // Reset state
         player.turnHasSwappedCard = true;
         draft.gamePhase = 'main';
         draft.selectedDeckCardIndex = null;
-        draft.selectedHandCardIndex = null;
     }));
   };
 
@@ -247,7 +267,13 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
       <div className="w-full h-screen flex flex-col bg-transparent text-white p-2 overflow-hidden fixed inset-0">
         {/* Opponent's Area */}
         <div className="flex-1">
-          <PlayerArea player={opponentPlayer} isOpponent={true} />
+          <PlayerArea 
+            player={opponentPlayer} 
+            isOpponent={true} 
+            onBoardClick={slotIndex => handleTargetClick({ type: 'creature', playerIndex: 1, slotIndex })}
+            onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 1})}
+            isTargeting={gameState.gamePhase === 'selectingTarget'}
+          />
         </div>
 
         {/* Center Action Bar */}
@@ -289,7 +315,9 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
               player={activePlayer} 
               isOpponent={false} 
               onBoardClick={handleBoardSlotClick} 
+              onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 0 })}
               isPlacing={gameState.gamePhase === 'selectingBoardSlot'}
+              isTargeting={gameState.gamePhase === 'selectingTarget'}
           />
         </div>
         
@@ -299,7 +327,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
               <div 
                   key={card.id + i} 
                   className={cn("w-40 h-56 transition-all duration-300 hover:-translate-y-12 hover:scale-110 relative",
-                      (isPlayerTurn && (gameState.gamePhase === 'main' || gameState.gamePhase === 'selectingHandCard')) ? "cursor-pointer" : "cursor-not-allowed",
+                      (isPlayerTurn && (gameState.gamePhase === 'main' || gameState.gamePhase === 'selectingHandCard' || gameState.gamePhase === 'selectingTarget')) ? "cursor-pointer" : "cursor-not-allowed",
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
@@ -318,9 +346,10 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
       <AlertDialog open={showDeckModal} onOpenChange={setShowDeckModal}>
         <AlertDialogContent className="max-w-4xl h-[80vh]">
           <AlertDialogHeader>
-            <AlertDialogTitle>选择卡牌</AlertDialogTitle>
+            <AlertDialogTitle>检视牌库</AlertDialogTitle>
             <AlertDialogDescription>
-              选择一张卡牌加入你的手牌或与手牌交换。每回合只有一次机会。
+              {activePlayer.hand.length < 6 ? "你的手牌未满，选择一张卡牌直接加入手牌。" : "选择一张卡牌与你的手牌交换。"}
+              每回合只有一次机会。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <ScrollArea className="h-full">
