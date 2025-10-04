@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { HeartIcon, SwordIcon, ManaIcon } from '@/components/icons/GameIcons';
+import { HeartIcon, SwordIcon } from '@/components/icons/GameIcons';
 
 interface CardProps {
   card: CardData | Creature;
@@ -22,8 +22,7 @@ function CardContentLayout({ card, isCreatureInstance, cardData }: { card: CardD
         <CardTitle className={cn("font-headline text-center truncate", isCreatureInstance ? "text-xs" : "text-base")}>{card.name}</CardTitle>
         {!isCreatureInstance && (
           <div className="absolute top-1 right-1 flex items-center justify-center bg-primary/90 rounded-full w-8 h-8 border border-sky-300 shadow-lg">
-            <ManaIcon className="w-4 h-4 text-white" />
-            <span className="font-bold text-lg text-white ml-0.5">{cardData.finalCost}</span>
+            <span className="font-bold text-lg text-white">{cardData.finalCost}</span>
           </div>
         )}
       </CardHeader>

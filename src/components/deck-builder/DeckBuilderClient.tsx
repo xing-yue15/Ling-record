@@ -464,7 +464,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
 
   return (
-    <div className="flex h-full flex-row gap-8 min-h-0">
+    <div className="flex h-full flex-row gap-8">
         {/* Left Column: Available Terms */}
         <UICard className="w-1/4 bg-card/50 flex flex-col">
           <CardHeader>
@@ -493,14 +493,14 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </UICard>
 
         {/* Middle Column: Creator / Deck */}
-        <div className="w-1/2 h-full flex flex-col">
-          <Tabs defaultValue="creator" className="w-full h-full flex flex-col">
+        <div className="w-1/2 flex flex-col">
+          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex-grow-0 flex flex-col space-y-4">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
               <UICard className="bg-card/50">
                 <CardHeader>
                   <div className="flex items-center gap-2 justify-between">
