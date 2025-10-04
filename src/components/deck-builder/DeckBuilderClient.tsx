@@ -10,20 +10,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Wand2, Loader2, Trash2, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-interface DeckBuilderClientProps {
-  ownedTerms: Term[];
+interface LimiterGroup {
+  limiter: Term;
+  children: Term[];
 }
+
+type CraftingTerm = Term | LimiterGroup;
 
 // THIS FUNCTION IS NOW A PLACEHOLDER and needs to be completely rewritten
 // to support the new complex logic with 'X' variables and conditional terms.
-const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card | null => {
+const createCardFromTerms = (terms: CraftingTerm[], name: string, type: CardType): Card | null => {
     if (terms.length === 0) return null;
 
     // --- Placeholder Logic ---
@@ -34,7 +37,7 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
     let attack = 0;
     let health = 0;
 
-    terms.forEach(term => {
+    const processTerm = (term: Term) => {
         // This is a naive implementation and does not handle 'X' or modifiers correctly.
         if (typeof term.cost === 'number') {
             totalCost += term.cost;
@@ -47,8 +50,18 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
         
         if (type === '造物牌' && term.id === 'damage') attack += 2;
         if (type === '造物牌' && term.id === 'heal') health += 2;
-
+    }
+    
+    terms.forEach(item => {
+        if ('limiter' in item) {
+            // This is a limiter group. For now, just process children.
+            // Complex cost calculation will happen here later.
+            item.children.forEach(processTerm);
+        } else {
+            processTerm(item);
+        }
     });
+
     // --- End of Placeholder Logic ---
 
     const finalCost = Math.max(1, Math.ceil(totalCost));
@@ -56,18 +69,22 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
     return {
         id: `card-${Date.now()}`,
         name,
+        // @ts-ignore - terms structure is now complex, need to adapt later
         terms,
         finalCost,
         type,
         description: descriptionParts.join(' ').trim(), // Join parts with a space
         attack,
         health,
-        artId: terms[0]?.artId || 'card-art-1',
+        artId: 'card-art-1',
     };
 };
 
 export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
-  const [craftingTerms, setCraftingTerms] = useState<Term[]>([]);
+  const [mainTerms, setMainTerms] = useState<CraftingTerm[]>([]);
+  const [limiterTerms, setLimiterTerms] = useState<Term[]>([]);
+  const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term }>('main');
+
   const [cardName, setCardName] = useState('新卡牌');
   const [cardType, setCardType] = useState<CardType>('法术牌');
   const [deck, setDeck] = useState<Card[]>([]);
@@ -78,6 +95,14 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const enemyId = searchParams.get('enemyId');
   const DECK_MAX_COST = 500; 
 
+  const craftingTerms = useMemo(() => {
+    if (craftingMode === 'main') {
+      return mainTerms;
+    }
+    // While editing a limiter, the "main" terms are the limiter's children
+    return limiterTerms;
+  }, [mainTerms, limiterTerms, craftingMode]);
+  
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
@@ -91,15 +116,39 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     }
   }, []);
 
-  const previewCard = useMemo(() => createCardFromTerms(craftingTerms, cardName, cardType), [craftingTerms, cardName, cardType]);
+  const previewCard = useMemo(() => {
+      const allTerms = [...mainTerms];
+      if (craftingMode !== 'main' && limiterTerms.length > 0) {
+          allTerms.push({ limiter: craftingMode.limiter, children: limiterTerms });
+      }
+      return createCardFromTerms(allTerms, cardName, cardType)
+  }, [mainTerms, limiterTerms, craftingMode, cardName, cardType]);
+  
   
   const deckTotalCost = useMemo(() => {
     return deck.reduce((total, card) => total + card.finalCost, 0);
   }, [deck]);
 
   const addTermToCrafting = (term: Term) => {
+    if (term.type === '限定') {
+        const isAlreadyInMain = mainTerms.some(t => 'limiter' in t && t.limiter.id === term.id);
+        if (isAlreadyInMain) {
+            toast({
+                title: '无法添加限定词',
+                description: '每张卡牌只能有一个相同的限定词。',
+                variant: 'destructive',
+            });
+            return;
+        }
+        setCraftingMode({ limiter: term });
+        return;
+    }
+
+    const currentTerms = craftingMode === 'main' ? mainTerms.filter(t => !('limiter' in t)) as Term[] : limiterTerms;
     const isNumericTerm = term.name.includes('X');
-    const isAlreadyInCrafting = craftingTerms.some(t => t.id === term.id);
+    
+    // Check for duplicates in the current context
+    const isAlreadyInCrafting = currentTerms.some(t => t.id === term.id);
 
     if (!isNumericTerm && isAlreadyInCrafting) {
         toast({
@@ -109,44 +158,54 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
         });
         return;
     }
-    
-    // Prevent adding more than one of the same limiter term
-    if (term.type === '限定' && isAlreadyInCrafting) {
-       toast({
-            title: '无法添加限定词',
-            description: '每张卡牌只能有一个相同的限定词。',
-            variant: 'destructive',
-        });
-        return;
-    }
 
-    // TODO: Implement UI for setting 'X' value
-    setCraftingTerms(prev => [...prev, term]);
+    if (craftingMode === 'main') {
+        setMainTerms(prev => [...prev, term]);
+    } else {
+        setLimiterTerms(prev => [...prev, term]);
+    }
   };
 
-  const removeTermFromCrafting = (termId: string) => {
-    setCraftingTerms(prev => {
-        const index = prev.findIndex(t => t.id === termId);
-        if (index === -1) return prev;
-        const newTerms = [...prev];
-        newTerms.splice(index, 1);
-        return newTerms;
-    });
+  const removeTermFromCrafting = (termId: string, index: number) => {
+    if (craftingMode === 'main') {
+        setMainTerms(prev => prev.filter((_, i) => i !== index));
+    } else {
+        setLimiterTerms(prev => prev.filter((_, i) => i !== index));
+    }
   };
   
   const clearCrafting = () => {
-    setCraftingTerms([]);
+    if (craftingMode === 'main') {
+      setMainTerms([]);
+    } else {
+      setLimiterTerms([]);
+    }
     setCardName("新卡牌");
   }
 
+  const completeLimiterEditing = () => {
+    if (craftingMode === 'main') return;
+
+    const newGroup: LimiterGroup = {
+        limiter: craftingMode.limiter,
+        children: limiterTerms,
+    };
+    
+    setMainTerms(prev => [...prev, newGroup]);
+    setLimiterTerms([]);
+    setCraftingMode('main');
+  }
+
   const handleGenerateName = async () => {
-    if (craftingTerms.length === 0) {
+    const termsForAI = mainTerms.flatMap(t => ('limiter' in t) ? [t.limiter, ...t.children] : [t]);
+    if (termsForAI.length === 0) {
       toast({ title: "无法生成名称", description: "请先将一些词条添加到制作区。", variant: 'destructive' });
       return;
     }
     setIsGenerating(true);
     try {
-      const result = await generateCardName({ terms: craftingTerms });
+      // @ts-ignore - AI flow needs to be updated for new structure
+      const result = await generateCardName({ terms: termsForAI });
       setCardName(result.cardName);
     } catch (error) {
       console.error('AI name generation failed:', error);
@@ -157,13 +216,19 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   };
   
   const addCardToDeck = () => {
+    if (craftingMode !== 'main') {
+        toast({ title: '请先完成限定词编辑', description: '点击“返回主制作区”以完成当前限定词的构筑。', variant: 'destructive' });
+        return;
+    }
     if (previewCard) {
       if (deckTotalCost + previewCard.finalCost > DECK_MAX_COST) {
         toast({ title: '已达消耗上限', description: `无法添加此卡牌，它会使牌组总消耗超过 ${DECK_MAX_COST}。`, variant: 'destructive'});
         return;
       }
       setDeck(prev => [...prev, previewCard]);
-      clearCrafting();
+      setMainTerms([]);
+      setLimiterTerms([]);
+      setCardName("新卡牌");
       toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
     }
   };
@@ -177,15 +242,32 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   }
 
   const groupedCraftingTerms = useMemo(() => {
-    const counts: { [id: string]: { term: Term; count: number } } = {};
-    craftingTerms.forEach(term => {
-        if (!counts[term.id]) {
-            counts[term.id] = { term, count: 0 };
+    const termsToGroup = craftingMode === 'main' ? mainTerms : limiterTerms;
+    const counts: { [id: string]: { term: CraftingTerm; count: number } } = {};
+    
+    termsToGroup.forEach(item => {
+        const key = 'limiter' in item ? item.limiter.id : item.id;
+        if (!counts[key]) {
+            counts[key] = { term: item, count: 0 };
         }
-        counts[term.id].count++;
+        counts[key].count++;
     });
     return Object.values(counts);
-  }, [craftingTerms]);
+  }, [mainTerms, limiterTerms, craftingMode]);
+  
+  const renderTermBadge = (term: Term, onRemove: () => void) => {
+    const isNumeric = term.name.includes('X');
+    return (
+      <div key={term.id} className="relative inline-block">
+        <Badge variant="secondary" className="text-lg p-3 pr-8">
+          {term.name}
+        </Badge>
+        <button onClick={onRemove} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
+            <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -224,7 +306,14 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 <div className="space-y-8">
                   <UICard className="bg-card/50">
                     <CardHeader>
-                      <CardTitle className="font-headline">制作区</CardTitle>
+                      <CardTitle className="font-headline flex items-center gap-2">
+                        {craftingMode !== 'main' && (
+                           <Button variant="outline" size="sm" onClick={completeLimiterEditing}>
+                              <ArrowLeft className="w-4 h-4 mr-1"/> 返回
+                           </Button>
+                        )}
+                        {craftingMode === 'main' ? '主制作区' : `编辑中: ${craftingMode.limiter.name}`}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="min-h-48">
                       {craftingTerms.length === 0 ? (
@@ -232,15 +321,40 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                       ) : (
                         <div ref={scrollContainerRef} className="overflow-x-auto whitespace-nowrap pb-4">
                           <div className="flex w-max space-x-4">
-                          {groupedCraftingTerms.map(({ term, count }) => {
+                          {craftingTerms.map((item, index) => {
+                            if ('limiter' in item) {
+                                return (
+                                     <div key={item.limiter.id} className="relative inline-block p-2 border border-dashed rounded-lg">
+                                        <Badge variant="default" className="text-md p-2">
+                                            {item.limiter.name}
+                                        </Badge>
+                                        <div className="flex gap-2 mt-2 pl-2">
+                                            {item.children.map(child => (
+                                                <Badge key={child.id} variant="secondary">{child.name}</Badge>
+                                            ))}
+                                        </div>
+                                         <button onClick={() => removeTermFromCrafting(item.limiter.id, index)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                     </div>
+                                )
+                            }
+                            const term = item as Term;
                             const isNumeric = term.name.includes('X');
+                            const count = isNumeric ? groupedCraftingTerms.find(g => 'id' in g.term && g.term.id === term.id)?.count || 1 : 1;
+                            
+                            // Only render the first instance of a numeric term to avoid duplicates
+                            if (isNumeric && craftingTerms.findIndex(t => 'id' in t && t.id === term.id) < index) {
+                                return null;
+                            }
+                            
                             return (
-                              <div key={term.id} className="relative inline-block">
+                              <div key={term.id + index} className="relative inline-block">
                                   <Badge variant="secondary" className="text-lg p-3 pr-8">
                                       {term.name}
                                       {isNumeric && count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
                                   </Badge>
-                                  <button onClick={() => removeTermFromCrafting(term.id)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
+                                  <button onClick={() => removeTermFromCrafting(term.id, index)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
                                       <Trash2 className="w-3 h-3" />
                                   </button>
                               </div>
@@ -267,7 +381,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                           <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
                           <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
                         </div>
-                        <Button size="lg" className="w-full" onClick={addCardToDeck}>
+                        <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
                           添加到牌组
                         </Button>
                       </CardContent>
