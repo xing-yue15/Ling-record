@@ -493,7 +493,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </UICard>
 
         {/* Middle Column: Creator / Deck */}
-        <div className="w-1/2 flex flex-col min-h-0">
+        <div className="w-1/2 h-full flex flex-col">
           <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
@@ -501,38 +501,36 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             </TabsList>
             
             <TabsContent value="creator" className="mt-4 flex-grow-0 flex flex-col space-y-4">
-              <div>
-                <UICard className="bg-card/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-2 justify-between">
-                      <CardTitle className="font-headline flex items-center gap-2">
-                        {craftingMode !== 'main' && (
-                           <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
-                              <ArrowLeft className="w-4 h-4 mr-1"/> 完成
-                           </Button>
-                        )}
-                        <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
-                      </CardTitle>
-                      {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
+              <UICard className="bg-card/50">
+                <CardHeader>
+                  <div className="flex items-center gap-2 justify-between">
+                    <CardTitle className="font-headline flex items-center gap-2">
+                      {craftingMode !== 'main' && (
+                         <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
+                            <ArrowLeft className="w-4 h-4 mr-1"/> 完成
+                         </Button>
+                      )}
+                      <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
+                    </CardTitle>
+                    {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
+                  </div>
+                </CardHeader>
+                <CardContent className="min-h-[12rem]">
+                  {termsInCurrentCraftingArea.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-10">
+                        {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
+                      </p>
+                  ) : (
+                    <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                       <CraftingAreaContent 
+                         terms={termsInCurrentCraftingArea}
+                         onRemove={removeTermFromCrafting}
+                         onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
+                       />
                     </div>
-                  </CardHeader>
-                  <CardContent className="min-h-[12rem]">
-                    {termsInCurrentCraftingArea.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-10">
-                          {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
-                        </p>
-                    ) : (
-                      <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
-                         <CraftingAreaContent 
-                           terms={termsInCurrentCraftingArea}
-                           onRemove={removeTermFromCrafting}
-                           onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
-                         />
-                      </div>
-                    )}
-                  </CardContent>
-                </UICard>
-              </div>
+                  )}
+                </CardContent>
+              </UICard>
 
               {(craftingMode === 'main' && mainTerms.length > 0) && (
                 <UICard className="bg-card/50">
@@ -594,13 +592,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
         {/* Right Column: Card Preview */}
         <div className="w-1/4 flex justify-center">
-            <div className="w-64 h-96 mt-16">
-                {previewCard ? <GameCard card={previewCard} /> :
-                <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                    <p className="text-muted-foreground">卡牌预览</p>
-                </div>
-                }
-            </div>
+          <div className="w-64 h-96 mt-16">
+              {previewCard ? <GameCard card={previewCard} /> :
+              <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                  <p className="text-muted-foreground">卡牌预览</p>
+              </div>
+              }
+          </div>
         </div>
       </div>
   );
