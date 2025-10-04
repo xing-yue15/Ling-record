@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface DeckBuilderClientProps {
   ownedTerms: Term[];
@@ -111,6 +112,8 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const enemyId = searchParams.get('enemyId');
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -341,7 +344,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       </div>
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
             <Button variant="outline" asChild>
-                <Link href="/deck-selection">
+                <Link href={`/deck-selection?enemyId=${enemyId}`}>
                     <ArrowLeft className="mr-2" />
                     返回
                 </Link>

@@ -5,9 +5,6 @@ import { initialTerms } from '@/lib/initial-data';
 import { useSearchParams } from 'next/navigation';
 
 export default function DeckBuilderPage() {
-  const searchParams = useSearchParams();
-  const enemyId = searchParams.get('enemyId');
-
   // In a real app, you'd fetch the player's owned terms from a database.
   const ownedTerms = initialTerms;
 
