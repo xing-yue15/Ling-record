@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -276,7 +275,6 @@ const useHorizontalScroll = () => {
     }, []);
     return elRef;
 }
-
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const searchParams = useSearchParams();
@@ -596,12 +594,14 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </div>
 
         {/* Right Column: Card Preview */}
-        <div className="w-1/4 flex justify-center items-start pt-16">
-          {previewCard ? <GameCard card={previewCard} /> :
-            <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                <p className="text-muted-foreground">卡牌预览</p>
-            </div>
-          }
+        <div className="w-1/4 flex justify-center">
+          <div className="w-64 h-96 mt-16">
+            {previewCard ? <GameCard card={previewCard} /> :
+              <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                  <p className="text-muted-foreground">卡牌预览</p>
+              </div>
+            }
+          </div>
         </div>
       </div>
       <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
