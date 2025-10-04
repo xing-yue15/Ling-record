@@ -5,7 +5,7 @@ import { Swords } from 'lucide-react';
 
 export function Footer() {
   const pathname = usePathname();
-  const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds');
+  const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds') || pathname.startsWith('/deck-selection') || pathname.startsWith('/deck-builder');
 
 
   if (inGame) {

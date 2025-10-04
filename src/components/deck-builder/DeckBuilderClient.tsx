@@ -9,10 +9,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, Save } from 'lucide-react';
+import { Wand2, Loader2, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
 
 interface DeckBuilderClientProps {
   ownedTerms: Term[];
@@ -338,11 +339,17 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           </Tabs>
         </div>
       </div>
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-center">
-          <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
-            <Save className="mr-2"/>
-            保存牌组
-          </Button>
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
+            <Button variant="outline" asChild>
+                <Link href="/deck-selection">
+                    <ArrowLeft className="mr-2" />
+                    返回
+                </Link>
+            </Button>
+            <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
+                <Save className="mr-2"/>
+                保存牌组
+            </Button>
         </div>
     </>
   );

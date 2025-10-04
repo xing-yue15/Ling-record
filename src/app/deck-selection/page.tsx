@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Swords, PlusCircle } from 'lucide-react';
+import { Swords, PlusCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 // Placeholder data for saved decks. In a real app, this would come from a user's data store.
@@ -43,44 +43,54 @@ export default function DeckSelectionPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 min-h-[calc(100vh-10rem)]">
-      <div className="text-center mb-12">
-        <h1 className="font-headline text-4xl font-bold text-primary">选择你的卡组</h1>
-        <p className="text-foreground/80 mt-2">为对抗 <span className="font-bold text-primary">{enemyId}</span> 选择一套牌组。</p>
-      </div>
+    <div className="container mx-auto py-8 px-4 h-screen flex flex-col">
+       <header className="flex items-center justify-start mb-12">
+        <Button variant="outline" size="icon" asChild>
+          <Link href={`/adventure/magic-world`}>
+            <ArrowLeft />
+          </Link>
+        </Button>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {savedDecks.map(deck => (
-          <Card
-            key={deck.id}
-            className={cn(
-              "cursor-pointer transition-all duration-200 border-2",
-              selectedDeck === deck.id
-                ? 'border-primary shadow-lg shadow-primary/30'
-                : 'border-transparent hover:border-primary/50'
-            )}
-            onClick={() => setSelectedDeck(deck.id)}
-          >
-            <CardHeader>
-              <CardTitle className="font-headline">{deck.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{deck.description}</p>
-              <p className="text-sm font-bold mt-4">{deck.cardCount} 张卡牌</p>
-            </CardContent>
-          </Card>
-        ))}
-         <Link href="/deck-builder" passHref>
-             <Card className="h-full flex flex-col items-center justify-center cursor-pointer transition-colors border-2 border-dashed hover:border-primary/80 hover:bg-primary/10">
-                <CardContent className="text-center p-6">
-                    <PlusCircle className="mx-auto h-12 w-12 text-muted-foreground"/>
-                    <p className="mt-4 font-semibold">创建新卡组</p>
+      <main className="flex-grow">
+        <div className="text-center mb-12">
+            <h1 className="font-headline text-4xl font-bold text-primary">选择你的卡组</h1>
+            <p className="text-foreground/80 mt-2">为对抗 <span className="font-bold text-primary">{enemyId}</span> 选择一套牌组。</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {savedDecks.map(deck => (
+            <Card
+                key={deck.id}
+                className={cn(
+                "cursor-pointer transition-all duration-200 border-2",
+                selectedDeck === deck.id
+                    ? 'border-primary shadow-lg shadow-primary/30'
+                    : 'border-transparent hover:border-primary/50'
+                )}
+                onClick={() => setSelectedDeck(deck.id)}
+            >
+                <CardHeader>
+                <CardTitle className="font-headline">{deck.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <p className="text-sm text-muted-foreground">{deck.description}</p>
+                <p className="text-sm font-bold mt-4">{deck.cardCount} 张卡牌</p>
                 </CardContent>
-             </Card>
-         </Link>
-      </div>
+            </Card>
+            ))}
+            <Link href="/deck-builder" passHref>
+                <Card className="h-full flex flex-col items-center justify-center cursor-pointer transition-colors border-2 border-dashed hover:border-primary/80 hover:bg-primary/10">
+                    <CardContent className="text-center p-6">
+                        <PlusCircle className="mx-auto h-12 w-12 text-muted-foreground"/>
+                        <p className="mt-4 font-semibold">创建新卡组</p>
+                    </CardContent>
+                </Card>
+            </Link>
+        </div>
+      </main>
 
-       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-center">
+       <footer className="py-8 flex justify-center">
           <Button 
             size="lg" 
             className="font-headline text-lg" 
@@ -90,7 +100,7 @@ export default function DeckSelectionPage() {
             <Swords className="mr-2"/>
             开始战斗
           </Button>
-        </div>
+        </footer>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const pathname = usePathname();
-  const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds');
+  const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds') || pathname.startsWith('/deck-selection') || pathname.startsWith('/deck-builder');
   const isHomePage = pathname === '/';
 
   if (inGame) {
