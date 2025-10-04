@@ -467,8 +467,9 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
   return (
     <div className="flex flex-col flex-grow min-h-0">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow min-h-0">
-        <UICard className="bg-card/50 flex flex-col">
+      <div className="flex flex-row flex-grow gap-8 min-h-0">
+        {/* Left Column: Available Terms */}
+        <UICard className="w-1/4 bg-card/50 flex flex-col">
           <CardHeader>
             <CardTitle className="font-headline">可用词条</CardTitle>
           </CardHeader>
@@ -494,7 +495,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
           </CardContent>
         </UICard>
 
-        <div className="lg:col-span-2 flex flex-col min-h-0">
+        {/* Middle Column: Creator / Deck */}
+        <div className="w-1/2 flex flex-col min-h-0">
           <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
@@ -502,68 +504,58 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             </TabsList>
             
             <TabsContent value="creator" className="mt-4 flex-grow min-h-0 flex flex-col">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow min-h-0">
-                <div className="space-y-8 flex flex-col">
-                  <UICard className="bg-card/50">
-                    <CardHeader>
-                      <div className="flex items-center gap-2 justify-between">
-                        <CardTitle className="font-headline flex items-center gap-2">
-                          {craftingMode !== 'main' && (
-                             <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
-                                <ArrowLeft className="w-4 h-4 mr-1"/> 完成
-                             </Button>
-                          )}
-                          <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
-                        </CardTitle>
-                        {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
+              <div className="space-y-8 flex flex-col flex-grow">
+                <UICard className="bg-card/50">
+                  <CardHeader>
+                    <div className="flex items-center gap-2 justify-between">
+                      <CardTitle className="font-headline flex items-center gap-2">
+                        {craftingMode !== 'main' && (
+                           <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
+                              <ArrowLeft className="w-4 h-4 mr-1"/> 完成
+                           </Button>
+                        )}
+                        <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
+                      </CardTitle>
+                      {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="min-h-[12rem]">
+                    {termsInCurrentCraftingArea.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-10">
+                          {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
+                        </p>
+                    ) : (
+                      <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                         <CraftingAreaContent 
+                           terms={termsInCurrentCraftingArea}
+                           onRemove={removeTermFromCrafting}
+                           onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
+                         />
                       </div>
-                    </CardHeader>
-                    <CardContent className="min-h-[12rem]">
-                      {termsInCurrentCraftingArea.length === 0 ? (
-                          <p className="text-muted-foreground text-center py-10">
-                            {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
-                          </p>
-                      ) : (
-                        <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
-                           <CraftingAreaContent 
-                             terms={termsInCurrentCraftingArea}
-                             onRemove={removeTermFromCrafting}
-                             onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
-                           />
-                        </div>
-                      )}
+                    )}
+                  </CardContent>
+                </UICard>
+
+                {(craftingMode === 'main' && mainTerms.length > 0) && (
+                  <UICard className="bg-card/50">
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="flex gap-2">
+                            <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
+                            <Button onClick={handleGenerateName} disabled={isGenerating}>
+                                {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                                <span className="ml-2 hidden sm:inline">AI取名</span>
+                            </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
+                        <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
+                      </div>
+                      <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
+                        添加到牌组
+                      </Button>
                     </CardContent>
                   </UICard>
-
-                  {(craftingMode === 'main' && mainTerms.length > 0) && (
-                    <UICard className="bg-card/50">
-                      <CardContent className="pt-6 space-y-4">
-                        <div className="flex gap-2">
-                              <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
-                              <Button onClick={handleGenerateName} disabled={isGenerating}>
-                                  {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                  <span className="ml-2 hidden sm:inline">AI取名</span>
-                              </Button>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
-                          <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
-                        </div>
-                        <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
-                          添加到牌组
-                        </Button>
-                      </CardContent>
-                    </UICard>
-                  )}
-                </div>
-                
-                <div className="flex justify-center items-start">
-                    {previewCard ? <GameCard card={previewCard} /> :
-                      <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                          <p className="text-muted-foreground">卡牌预览</p>
-                      </div>
-                    }
-                </div>
+                )}
               </div>
             </TabsContent>
 
@@ -576,7 +568,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                 </CardHeader>
                 <CardContent className="flex-grow min-h-0">
                   <ScrollArea className="h-full pr-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {deck.map((card, index) => (
                         <div key={index} className="relative group/deckcard">
                           <GameCard card={card} />
@@ -602,19 +594,28 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
-        <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
-            <Button variant="outline" asChild>
-                <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
-                    <ArrowLeft className="mr-2" />
-                    返回
-                </Link>
-            </Button>
-            <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
-                <Save className="mr-2"/>
-                保存牌组
-            </Button>
+
+        {/* Right Column: Card Preview */}
+        <div className="w-1/4 flex justify-center items-start pt-16">
+          {previewCard ? <GameCard card={previewCard} /> :
+            <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                <p className="text-muted-foreground">卡牌预览</p>
+            </div>
+          }
         </div>
+      </div>
+      <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
+          <Button variant="outline" asChild>
+              <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
+                  <ArrowLeft className="mr-2" />
+                  返回
+              </Link>
+          </Button>
+          <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
+              <Save className="mr-2"/>
+              保存牌组
+          </Button>
+      </div>
     </div>
   );
 }
