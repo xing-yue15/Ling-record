@@ -124,7 +124,7 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
 
     if(finalLimiterDesc) {
        const naturalDesc = finalLimiterDesc.replace(limiter.name, "").trim().replace(/^：/, "").trim();
-       descriptionParts.push(naturalDesc.charAt(0).toUpperCase() + naturalDesc.slice(1));
+       descriptionParts.push(naturalDesc);
     }
     
 
@@ -290,7 +290,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const enemyId = searchParams.get('enemyId');
-  const availableTermsRef = useHorizontalScroll();
   const craftingAreaRef = useHorizontalScroll();
 
 
@@ -470,10 +469,10 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             <CardTitle className="font-headline">可用词条</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow min-h-0">
-             <div ref={availableTermsRef} className="overflow-x-auto whitespace-nowrap pb-4 h-full">
-                <div className="flex flex-col flex-wrap h-full gap-4">
+             <ScrollArea className="h-full pr-4">
+                <div className="space-y-4">
                   {ownedTerms.map(term => (
-                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between w-64 flex-shrink-0">
+                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
                       <div>
                         <h3 className="font-bold flex items-center gap-2">
                           {term.name} 
@@ -487,7 +486,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                     </div>
                   ))}
                 </div>
-            </div>
+            </ScrollArea>
           </CardContent>
         </UICard>
 
