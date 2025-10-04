@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { Term, Card, CardType } from '@/lib/definitions';
 import { GameCard } from '@/components/game/Card';
 import { Button } from '@/components/ui/button';
@@ -44,21 +44,29 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
         return desc.replace(/(\d+)/g, (match) => (parseInt(match) * count).toString()) + ' ';
     };
     
+    const allTermsForDescription = [...baseTerms, ...specialTerms, ...conditionalTerms];
+
+    allTermsForDescription.forEach(({term, count}) => {
+        const desc = type === '法术牌' ? term.description.spell : term.description.creature;
+        if (desc) {
+             description += processDescription(desc, count);
+        }
+    })
+
     const nonConditionalTerms = [...baseTerms, ...specialTerms];
 
     nonConditionalTerms.forEach(({ term, count }) => {
         totalCost += Number(term.cost) * count;
-        const desc = type === '法术牌' ? term.description.spell : term.description.creature;
-        description += processDescription(desc, count);
         
-        if (type === '造物牌' && term.description.creature.includes('获得')) {
-            const attackMatch = term.description.creature.match(/(\d+)\s*点攻击力/);
-            if (attackMatch) {
-                attack += parseInt(attackMatch[1], 10) * count;
+        if (type === '造物牌' && term.description.creature) {
+            const creatureDesc = term.description.creature.repeat(count);
+            const attackMatches = creatureDesc.matchAll(/(\d+)\s*点攻击力/g);
+            for (const match of attackMatches) {
+                attack += parseInt(match[1], 10);
             }
-            const healthMatch = term.description.creature.match(/(\d+)\s*点生命值/);
-            if (healthMatch) {
-                health += parseInt(healthMatch[1], 10) * count;
+            const healthMatches = creatureDesc.matchAll(/(\d+)\s*点生命值/g);
+             for (const match of healthMatches) {
+                health += parseInt(match[1], 10);
             }
         }
     });
@@ -74,8 +82,6 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
                 totalCost += parseFloat(modifier);
             }
         }
-        const desc = type === '法术牌' ? term.description.spell : term.description.creature;
-        description += processDescription(desc, count);
     });
 
     const finalCost = Math.max(1, Math.ceil(totalCost));
@@ -100,6 +106,20 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const handleWheel = (e: WheelEvent) => {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      };
+      container.addEventListener('wheel', handleWheel);
+      return () => container.removeEventListener('wheel', handleWheel);
+    }
+  }, []);
 
   const previewCard = useMemo(() => createCardFromTerms(craftingTerms, cardName, cardType), [craftingTerms, cardName, cardType]);
 
@@ -107,8 +127,14 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     setCraftingTerms(prev => [...prev, term]);
   };
 
-  const removeTermFromCrafting = (index: number) => {
-    setCraftingTerms(prev => prev.filter((_, i) => i !== index));
+  const removeTermFromCrafting = (termId: string) => {
+    setCraftingTerms(prev => {
+        const index = prev.findIndex(t => t.id === termId);
+        if (index === -1) return prev;
+        const newTerms = [...prev];
+        newTerms.splice(index, 1);
+        return newTerms;
+    });
   };
   
   const clearCrafting = () => {
@@ -135,11 +161,27 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   
   const addCardToDeck = () => {
     if (previewCard) {
+      if (deck.length >= 30) {
+        toast({ title: '牌组已满', description: '你的牌组最多只能包含30张卡牌。', variant: 'destructive' });
+        return;
+      }
       setDeck(prev => [...prev, previewCard]);
       clearCrafting();
       toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
     }
   };
+
+  const groupedCraftingTerms = useMemo(() => {
+    const counts: { [id: string]: { term: Term; count: number } } = {};
+    craftingTerms.forEach(term => {
+        if (!counts[term.id]) {
+            counts[term.id] = { term, count: 0 };
+        }
+        counts[term.id].count++;
+    });
+    return Object.values(counts);
+  }, [craftingTerms]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
@@ -186,18 +228,21 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                     {craftingTerms.length === 0 ? (
                         <p className="text-muted-foreground text-center py-10">添加词条以开始制作。</p>
                     ) : (
-                      <ScrollArea className="w-full whitespace-nowrap">
-                        <div className="flex w-max space-x-2 pb-4">
-                        {craftingTerms.map((term, index) => (
-                            <Badge key={index} variant="secondary" className="text-lg p-2">
-                            {term.name}
-                            <button onClick={() => removeTermFromCrafting(index)} className="ml-2 text-destructive hover:text-destructive/80">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                            </Badge>
+                      <div ref={scrollContainerRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                        <div className="flex w-max space-x-4">
+                        {groupedCraftingTerms.map(({ term, count }) => (
+                            <div key={term.id} className="relative inline-block">
+                                <Badge variant="secondary" className="text-lg p-3 pr-8">
+                                    {term.name}
+                                    {count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
+                                </Badge>
+                                <button onClick={() => removeTermFromCrafting(term.id)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 hover:bg-destructive/80">
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
+                            </div>
                         ))}
                         </div>
-                      </ScrollArea>
+                      </div>
                     )}
                     {craftingTerms.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="mt-4">清空</Button>}
                   </CardContent>
@@ -217,7 +262,9 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                         <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
                         <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
                       </div>
-                      <Button size="lg" className="w-full" onClick={addCardToDeck}>添加到牌组</Button>
+                      <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={deck.length >= 30}>
+                        添加到牌组 {deck.length >= 30 && "(已满)"}
+                      </Button>
                     </CardContent>
                   </UICard>
                 )}
@@ -243,7 +290,17 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 <ScrollArea className="h-[60vh] lg:h-[65vh]">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
                     {deck.map((card, index) => (
-                      <GameCard key={index} card={card} />
+                      <div key={index} className="relative group/deckcard">
+                        <GameCard card={card} />
+                         <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover/deckcard:opacity-100 transition-opacity"
+                            onClick={() => setDeck(d => d.filter((_, i) => i !== index))}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))}
                     {deck.length === 0 && 
                       <div className="col-span-full text-muted-foreground text-center py-10">
