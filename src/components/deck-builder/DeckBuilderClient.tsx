@@ -146,17 +146,24 @@ const CraftingAreaContent = ({
   onGroupClick?: (group: LimiterGroup, index: number) => void;
 }) => {
   const groupedTerms = useMemo(() => {
-    const termMap: { [id: string]: { item: CraftingItem; count: number; originalIndex: number } } = {};
+    const termMap: { [key: string]: { item: CraftingItem; count: number; originalIndices: number[] } } = {};
 
     terms.forEach((item, index) => {
       const isGroup = 'limiter' in item;
-      const key = isGroup ? item.limiter.id : item.id;
-      const isNumeric = !isGroup && (item as Term).name.includes('X');
+      const term = isGroup ? (item as LimiterGroup).limiter : (item as Term);
+      const isNumeric = !isGroup && term.name.includes('X');
+      
+      const key = isGroup ? `${term.id}-${index}` : term.id;
 
-      if (!termMap[key] || isGroup) {
-        termMap[key + index] = { item, count: 1, originalIndex: index };
-      } else if (isNumeric) {
-         termMap[key].count++;
+      if (!isNumeric || isGroup) {
+         // Unique key for groups and non-numeric terms to prevent grouping
+        termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
+      } else {
+        if (!termMap[key]) {
+          termMap[key] = { item, count: 0, originalIndices: [] };
+        }
+        termMap[key].count++;
+        termMap[key].originalIndices.push(index);
       }
     });
 
@@ -165,7 +172,9 @@ const CraftingAreaContent = ({
   
   return (
     <div className="flex w-max space-x-4">
-      {groupedTerms.map(({ item, count, originalIndex }) => {
+      {groupedTerms.map(({ item, count, originalIndices }) => {
+        const originalIndex = originalIndices[originalIndices.length-1]; // Use last index for removal
+
         if ('limiter' in item) {
           const group = item as LimiterGroup;
           return (
@@ -180,7 +189,7 @@ const CraftingAreaContent = ({
               <div className="flex gap-2 mt-2 pl-2">
                 {group.children.map((child, childIndex) => (
                   <Badge key={child.id + childIndex} variant="secondary">
-                    {child.name}
+                    {child.name.replace('X','')}
                   </Badge>
                 ))}
               </div>
@@ -268,32 +277,44 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const addTermToCrafting = (term: Term) => {
     // Entering limiter edit mode
     if (term.type === '限定') {
-        const isAlreadyInMain = mainTerms.some(t => 'limiter' in t && t.limiter.id === term.id);
-        if (craftingMode === 'main' && isAlreadyInMain) {
-            toast({
-                title: '无法添加限定词',
-                description: '每张卡牌只能有一个相同的限定词。',
-                variant: 'destructive',
-            });
-            return;
-        }
-        setCraftingMode({ limiter: term });
-        return;
+      if (craftingMode !== 'main') {
+          toast({
+              title: '无法添加限定词',
+              description: '不能在另一个限定词内部添加限定词。',
+              variant: 'destructive',
+          });
+          return;
+      }
+      const isAlreadyInMain = mainTerms.some(t => 'limiter' in t && t.limiter.id === term.id);
+      if (isAlreadyInMain) {
+          toast({
+              title: '无法添加限定词',
+              description: '每张卡牌只能有一个相同的限定词。',
+              variant: 'destructive',
+          });
+          return;
+      }
+      setCraftingMode({ limiter: term });
+      return;
     }
-
-    const currentTerms = craftingMode === 'main' ? mainTerms.filter((t): t is Term => !('limiter' in t)) : limiterTerms;
+    
+    const currentTerms = craftingMode === 'main' ? mainTerms : limiterTerms;
     const isNumericTerm = term.name.includes('X');
+    const isTermInArea = (t: CraftingItem): t is Term => !('limiter' in t);
     
     if (!isNumericTerm) {
-        const isAlreadyInCrafting = currentTerms.some(t => t.id === term.id);
-        if (isAlreadyInCrafting) {
-            toast({
-                title: '无法添加词条',
-                description: `“${term.name}”是一个唯一的词条，不能重复添加。`,
-                variant: 'destructive',
-            });
-            return;
-        }
+      const isAlreadyInCrafting = (craftingMode === 'main' ? mainTerms : limiterTerms)
+        .filter(isTermInArea)
+        .some(existingTerm => existingTerm.id === term.id);
+
+      if (isAlreadyInCrafting) {
+        toast({
+          title: '无法添加词条',
+          description: `“${term.name}”是一个唯一的词条，不能重复添加。`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
 
@@ -305,16 +326,41 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   };
 
   const removeTermFromCrafting = (termId: string, index: number, isGroup: boolean) => {
-    if (craftingMode === 'main') {
-        setMainTerms(prev => prev.filter((_, i) => i !== index));
+    const area = craftingMode === 'main' ? mainTerms : limiterTerms;
+    const setArea = craftingMode === 'main' ? setMainTerms : setLimiterTerms;
+
+    if (isGroup) {
+      setArea(prev => prev.filter((_, i) => i !== index));
+      return;
+    }
+    
+    const termToRemove = area[index];
+    if ('limiter' in termToRemove) return; // Should not happen with isGroup false
+
+    const isNumeric = termToRemove.name.includes('X');
+    if (isNumeric) {
+      // Find the last occurrence of this numeric term to remove
+      let lastIndex = -1;
+      for (let i = area.length - 1; i >= 0; i--) {
+        const currentTerm = area[i];
+        if (!('limiter' in currentTerm) && currentTerm.id === termId) {
+          lastIndex = i;
+          break;
+        }
+      }
+      if (lastIndex !== -1) {
+        setArea(prev => prev.filter((_, i) => i !== lastIndex));
+      }
     } else {
-        setLimiterTerms(prev => prev.filter((_, i) => i !== index));
+      // Remove non-numeric term by index
+      setArea(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   const handleLimiterGroupClick = (group: LimiterGroup, index: number) => {
     setCraftingMode({ limiter: group.limiter, originalIndex: index });
     setLimiterTerms(group.children);
+    // Remove the old group from mainTerms, it will be added back on completion
     setMainTerms(prev => prev.filter((_, i) => i !== index));
   };
   
@@ -330,13 +376,12 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const completeLimiterEditing = () => {
     if (craftingMode === 'main') return;
 
-    if (limiterTerms.length > 0) {
-      const newGroup: LimiterGroup = {
-          limiter: craftingMode.limiter,
-          children: limiterTerms,
-      };
-       setMainTerms(prev => [...prev, newGroup]);
-    }
+    const newGroup: LimiterGroup = {
+        limiter: craftingMode.limiter,
+        children: limiterTerms,
+    };
+    
+    setMainTerms(prev => [...prev, newGroup]);
     
     setLimiterTerms([]);
     setCraftingMode('main');
@@ -547,3 +592,5 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </>
   );
 }
+
+    
