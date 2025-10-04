@@ -20,72 +20,35 @@ interface DeckBuilderClientProps {
   ownedTerms: Term[];
 }
 
-// Function to calculate final card details
+// THIS FUNCTION IS NOW A PLACEHOLDER and needs to be completely rewritten
+// to support the new complex logic with 'X' variables and conditional terms.
 const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card | null => {
     if (terms.length === 0) return null;
 
-    const termCounts: { [id: string]: { term: Term; count: number } } = {};
-    terms.forEach(term => {
-        if (!termCounts[term.id]) {
-            termCounts[term.id] = { term, count: 0 };
-        }
-        termCounts[term.id].count++;
-    });
-
-    const baseTerms = Object.values(termCounts).filter(tc => tc.term.type === '基础');
-    const specialTerms = Object.values(termCounts).filter(tc => tc.term.type === '特殊');
-    const conditionalTerms = Object.values(termCounts).filter(tc => tc.term.type === '限定');
-    
-    if (baseTerms.length === 0 && specialTerms.length === 0) return null;
-
+    // --- Placeholder Logic ---
+    // This logic does NOT correctly implement the new rules.
+    // It's a temporary placeholder to keep the UI from breaking.
     let totalCost = 0;
     let description = '';
     let attack = 0;
     let health = 0;
 
-    const processDescription = (desc: string, count: number) => {
-        return desc.replace(/(\d+)/g, (match) => (parseInt(match) * count).toString()) + ' ';
-    };
-    
-    const allTermsForDescription = [...baseTerms, ...specialTerms, ...conditionalTerms];
+    terms.forEach(term => {
+        // This is a naive implementation and does not handle 'X' or modifiers correctly.
+        if (typeof term.cost === 'number') {
+            totalCost += term.cost;
+        }
 
-    allTermsForDescription.forEach(({term, count}) => {
         const desc = type === '法术牌' ? term.description.spell : term.description.creature;
         if (desc) {
-             description += processDescription(desc, count);
+            description += desc.replace(/X/g, '1') + ' '; // Assume X=1 for now
         }
-    })
-
-    const nonConditionalTerms = [...baseTerms, ...specialTerms];
-
-    nonConditionalTerms.forEach(({ term, count }) => {
-        totalCost += Number(term.cost) * count;
         
-        if (type === '造物牌' && term.description.creature) {
-            const creatureDesc = term.description.creature.repeat(count);
-            const attackMatches = creatureDesc.matchAll(/(\d+)\s*点攻击力/g);
-            for (const match of attackMatches) {
-                attack += parseInt(match[1], 10);
-            }
-            const healthMatches = creatureDesc.matchAll(/(\d+)\s*点生命值/g);
-             for (const match of healthMatches) {
-                health += parseInt(match[1], 10);
-            }
-        }
-    });
+        if (type === '造物牌' && term.id === 'damage') attack += 2;
+        if (type === '造物牌' && term.id === 'heal') health += 2;
 
-    conditionalTerms.forEach(({ term, count }) => {
-        for (let i = 0; i < count; i++) {
-            const modifier = term.cost.toString();
-            if (modifier.startsWith('*')) {
-                totalCost *= parseFloat(modifier.substring(1));
-            } else if (modifier.startsWith('/')) {
-                totalCost /= parseFloat(modifier.substring(1));
-            } else {
-                totalCost += parseFloat(modifier);
-            }
-        }
     });
+    // --- End of Placeholder Logic ---
 
     const finalCost = Math.max(1, Math.ceil(totalCost));
 
@@ -112,6 +75,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const enemyId = searchParams.get('enemyId');
+  const DECK_MAX_COST = 500; // Restored the deck cost limit
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -127,8 +91,13 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   }, []);
 
   const previewCard = useMemo(() => createCardFromTerms(craftingTerms, cardName, cardType), [craftingTerms, cardName, cardType]);
+  
+  const deckTotalCost = useMemo(() => {
+    return deck.reduce((total, card) => total + card.finalCost, 0);
+  }, [deck]);
 
   const addTermToCrafting = (term: Term) => {
+    // TODO: Implement UI for setting 'X' value
     setCraftingTerms(prev => [...prev, term]);
   };
 
@@ -166,6 +135,10 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   
   const addCardToDeck = () => {
     if (previewCard) {
+      if (deckTotalCost + previewCard.finalCost > DECK_MAX_COST) {
+        toast({ title: '已达消耗上限', description: `无法添加此卡牌，它会使牌组总消耗超过 ${DECK_MAX_COST}。`, variant: 'destructive'});
+        return;
+      }
       setDeck(prev => [...prev, previewCard]);
       clearCrafting();
       toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
@@ -173,7 +146,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   };
 
   const handleSaveDeck = () => {
-    // In a real app, this would open a dialog to name the deck and save it to the backend.
     if (deck.length === 0) {
         toast({ title: '无法保存', description: '你的牌组是空的。', variant: 'destructive' });
         return;
@@ -195,7 +167,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full pb-20">
-        {/* Terms List */}
         <UICard className="bg-card/50">
           <CardHeader>
             <CardTitle className="font-headline">可用词条</CardTitle>
@@ -218,7 +189,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           </CardContent>
         </UICard>
 
-        {/* Crafting and Deck Area */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="creator" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -228,7 +198,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
             
             <TabsContent value="creator" className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Crafting Area */}
                 <div className="space-y-8">
                   <UICard className="bg-card/50">
                     <CardHeader>
@@ -280,7 +249,6 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                   )}
                 </div>
                 
-                {/* Preview */}
                 <div className="flex justify-center items-start">
                     {previewCard ? <GameCard card={previewCard} /> :
                       <div className="w-64 h-96 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
@@ -296,7 +264,12 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
+                      <div>
+                        <span className="text-sm text-muted-foreground">总消耗: </span>
+                        <span className="font-bold">{deckTotalCost} / {DECK_MAX_COST}</span>
+                      </div>
                     </div>
+                    <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2 h-2" />
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[calc(100vh-33rem)]">
@@ -329,7 +302,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       </div>
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center">
             <Button variant="outline" asChild>
-                <Link href={`/deck-selection?enemyId=${enemyId}`}>
+                <Link href={enemyId ? `/deck-selection?enemyId=${enemyId}` : '/worlds'}>
                     <ArrowLeft className="mr-2" />
                     返回
                 </Link>

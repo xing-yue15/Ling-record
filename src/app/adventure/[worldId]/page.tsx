@@ -28,7 +28,6 @@ export default function AdventureWorldPage({ params }: { params: { worldId: stri
     maxHealth: 50,
     mana: 100,
     maxMana: 100,
-    ownedTerms: 88, // Example number of owned terms
   };
 
   return (
