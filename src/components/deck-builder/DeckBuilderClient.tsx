@@ -24,8 +24,6 @@ interface LimiterGroup {
 
 type CraftingItem = Term | LimiterGroup;
 
-// THIS FUNCTION IS NOW A PLACEHOLDER and needs to be completely rewritten
-// to support the new complex logic with 'X' variables and conditional terms.
 const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType): Card | null => {
     if (terms.length === 0) return null;
 
@@ -33,60 +31,97 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     const descriptionParts: string[] = [];
     let attack = 0;
     let health = 0;
-
-    const processTerm = (term: Term) => {
-        // This is a naive implementation and does not handle 'X' or modifiers correctly.
-        if (typeof term.cost === 'number') {
-            totalCost += term.cost;
-        } else if (typeof term.cost === 'string' && !term.cost.match(/[/*X]/)) {
-            totalCost += Number(term.cost);
-        }
-
-        const desc = type === '法术牌' ? term.description.spell : term.description.creature;
-        if (desc && desc.trim() && !descriptionParts.includes(desc)) { // Prevent duplicate description parts
-             descriptionParts.push(desc.replace(/X/g, '1')); // Assume X=1 for now
-        }
-        
-        // This is a naive stat calculation
-        if (type === '造物牌') {
-          if (term.id.includes('damage')) {
-             attack += 2; // Placeholder for 'damage'
-          }
-          if (term.id.includes('heal')) {
-             health += 4; // Placeholder for 'heal'
-          }
-        }
-    }
     
-    terms.forEach(item => {
-        if ('limiter' in item) {
-            // This is a limiter group. For now, just process children.
-            // Complex cost calculation will happen here later.
-            descriptionParts.push(`[${item.limiter.name}]:`);
-            const childDescriptions: string[] = [];
-            item.children.forEach(childTerm => {
-                 const desc = type === '法术牌' ? childTerm.description.spell : childTerm.description.creature;
-                 if (desc && desc.trim() && !childDescriptions.includes(desc)) {
-                     childDescriptions.push(desc.replace(/X/g, '1'));
-                 }
-                 processTerm(childTerm); // Process for cost/stats
-            });
-            descriptionParts.push(childDescriptions.join(' '));
-        } else {
-            processTerm(item);
+    const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
+    const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
+
+    // --- Process Main Terms ---
+    const mainTermCounts: { [id: string]: number } = {};
+    mainTerms.forEach(term => {
+        mainTermCounts[term.id] = (mainTermCounts[term.id] || 0) + 1;
+    });
+
+    Object.keys(mainTermCounts).forEach(termId => {
+        const term = mainTerms.find(t => t.id === termId);
+        if (!term) return;
+
+        const count = mainTermCounts[termId];
+        const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
+        
+        if (descTemplate) {
+            const finalDesc = descTemplate.replace(/(\d+)[xX]/g, (match, num) => {
+                return (parseInt(num) * count).toString();
+            }).replace(/[xX]/g, count.toString());
+             if (finalDesc.trim()) descriptionParts.push(finalDesc);
+        }
+
+        if (type === '造物牌') {
+            const attackDesc = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
+            if (attackDesc) {
+                attack += (parseInt(attackDesc[1] || '1') * count);
+            }
+            const healthDesc = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
+             if (healthDesc) {
+                health += (parseInt(healthDesc[1] || '1') * count);
+            }
         }
     });
-    
+
+    // --- Process Limiter Groups ---
+    limiterGroups.forEach(group => {
+        const limiter = group.limiter;
+        const children = group.children;
+        let limiterDesc = type === '法术牌' ? limiter.description.spell : limiter.description.creature;
+        limiterDesc = limiterDesc.replace(/\[触发特定效果\]/g, '??'); // Placeholder
+        
+        const childTermCounts: { [id: string]: number } = {};
+        children.forEach(term => {
+            childTermCounts[term.id] = (childTermCounts[term.id] || 0) + 1;
+        });
+
+        const childEffectDescriptions: string[] = [];
+        Object.keys(childTermCounts).forEach(termId => {
+            const term = children.find(t => t.id === termId);
+            if (!term) return;
+
+            const count = childTermCounts[termId];
+            const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
+
+             if (descTemplate) {
+                const finalDesc = descTemplate.replace(/(\d+)[xX]/g, (match, num) => {
+                    return (parseInt(num) * count).toString();
+                }).replace(/[xX]/g, count.toString());
+
+                if (finalDesc.trim()) {
+                    childEffectDescriptions.push(finalDesc);
+                }
+            }
+        });
+        
+        const combinedChildEffects = childEffectDescriptions.join(' ');
+        const finalLimiterDesc = `[${limiter.name}]: ${limiterDesc.replace('??', combinedChildEffects)}`;
+        descriptionParts.push(finalLimiterDesc);
+    });
+
+    // --- Naive Cost Calculation (Placeholder) ---
+    terms.forEach(item => {
+        if ('limiter' in item) {
+            // Very naive cost logic for now
+            item.children.forEach(child => { totalCost += (typeof child.cost === 'number' ? child.cost : 1); });
+        } else {
+            totalCost += (typeof item.cost === 'number' ? item.cost : 1);
+        }
+    });
     const finalCost = Math.max(1, Math.ceil(totalCost));
 
     return {
         id: `card-${Date.now()}`,
         name,
-        // @ts-ignore - terms structure is now complex, need to adapt later
+        // @ts-ignore - terms structure is complex
         terms,
         finalCost,
         type,
-        description: descriptionParts.join(' ').trim(), // Join parts with a space
+        description: descriptionParts.join(' ').trim(),
         attack,
         health,
         artId: 'card-art-1',
@@ -127,12 +162,12 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }, []);
 
   const previewCard = useMemo(() => {
-      let allTerms = [...mainTerms];
-      // This logic is flawed for preview. We should not add the incomplete group.
-      // The preview should only be based on mainTerms. 
-      // The limiter group is added to mainTerms ONLY when "completeLimiterEditing" is called.
-      return createCardFromTerms(allTerms, cardName, cardType)
-  }, [mainTerms, cardName, cardType]);
+      let allTerms: CraftingItem[] = [...mainTerms];
+      if (craftingMode !== 'main' && limiterTerms.length > 0) {
+        allTerms.push({ limiter: craftingMode.limiter, children: limiterTerms });
+      }
+      return createCardFromTerms(allTerms, cardName, cardType);
+  }, [mainTerms, limiterTerms, craftingMode, cardName, cardType]);
   
   
   const deckTotalCost = useMemo(() => {
@@ -158,16 +193,18 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     const currentTerms = craftingMode === 'main' ? mainTerms.filter((t): t is Term => !('limiter' in t)) : limiterTerms;
     const isNumericTerm = term.name.includes('X');
     
-    const isAlreadyInCrafting = currentTerms.some(t => t.id === term.id);
-
-    if (!isNumericTerm && isAlreadyInCrafting) {
-        toast({
-            title: '无法添加词条',
-            description: `“${term.name}”是一个唯一的词条，不能重复添加。`,
-            variant: 'destructive',
-        });
-        return;
+    if (!isNumericTerm) {
+        const isAlreadyInCrafting = currentTerms.some(t => t.id === term.id);
+        if (isAlreadyInCrafting) {
+            toast({
+                title: '无法添加词条',
+                description: `“${term.name}”是一个唯一的词条，不能重复添加。`,
+                variant: 'destructive',
+            });
+            return;
+        }
     }
+
 
     if (craftingMode === 'main') {
         setMainTerms(prev => [...prev, term]);
@@ -264,20 +301,35 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }
   
   const groupedCraftingTerms = useMemo(() => {
-    const termsToGroup = termsInCurrentCraftingArea;
-    const counts: { [id: string]: { item: CraftingItem; count: number } } = {};
-    
-    termsToGroup.forEach(item => {
-        const key = 'limiter' in item ? item.limiter.id : item.id;
-        const isNumeric = 'name' in item ? item.name.includes('X') : false;
+    const termsToGroup: CraftingItem[] = [...termsInCurrentCraftingArea];
 
-        if (!counts[key] || isNumeric) {
-             if (!counts[key]) counts[key] = { item: item, count: 0 };
-             counts[key].count++;
+    const termMap: { [id: string]: { item: CraftingItem; count: number } } = {};
+
+    termsToGroup.forEach(item => {
+        if ('limiter' in item) {
+             const key = item.limiter.id;
+             if (!termMap[key]) {
+                termMap[key] = { item: item, count: 1 };
+             }
+        } else {
+            const key = item.id;
+            const isNumeric = item.name.includes('X');
+            if (isNumeric) {
+                if (!termMap[key]) {
+                    termMap[key] = { item: item, count: 0 };
+                }
+                termMap[key].count++;
+            } else {
+                 if (!termMap[key]) {
+                    termMap[key] = { item: item, count: 1 };
+                 }
+            }
         }
     });
-    return Object.values(counts);
+
+    return Object.values(termMap);
   }, [termsInCurrentCraftingArea]);
+
 
   return (
     <>
