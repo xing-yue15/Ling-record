@@ -2,7 +2,7 @@
 import { GameBoardClient } from "@/components/game/GameBoardClient";
 import { GameState } from "@/lib/definitions";
 
-export default function BattlePage({ params }: { params: { matchId: string } }) {
+export default function BattlePage({ params: { matchId } }: { params: { matchId: string } }) {
   // In a real app, this would be fetched from a server based on the matchId
   // For now, we use initial static data for demonstration
   const initialGameState: GameState = {
@@ -46,10 +46,11 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
     gamePhase: 'main',
     selectedHandCardIndex: null,
     selectedDeckCardIndex: null,
+    turnHasSwappedCard: false,
     winner: null,
   }
 
   return (
-     <GameBoardClient matchId={params.matchId} initialState={initialGameState} />
+     <GameBoardClient matchId={matchId} initialState={initialGameState} />
   );
 }
