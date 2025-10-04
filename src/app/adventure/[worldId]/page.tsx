@@ -90,7 +90,7 @@ export default function AdventureWorldPage({ params }: { params: { worldId: stri
                   </CardContent>
                   <CardFooter>
                     <Button asChild className="w-full">
-                      <Link href={`/deck-builder?enemyId=${enemy.id}`}>战斗</Link>
+                      <Link href={`/deck-selection?enemyId=${enemy.id}`}>战斗</Link>
                     </Button>
                   </CardFooter>
                 </Card>

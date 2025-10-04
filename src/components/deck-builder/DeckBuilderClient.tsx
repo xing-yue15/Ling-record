@@ -9,18 +9,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, Swords } from 'lucide-react';
+import { Wand2, Loader2, Trash2, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 
 interface DeckBuilderClientProps {
   ownedTerms: Term[];
-  onDeckComplete?: (deck: Card[]) => void;
-  isBattlePrep?: boolean;
 }
 
-const DECK_MAX_COST = 100; // Updated from your document
+const DECK_MAX_COST = 100;
 
 // Function to calculate final card details
 const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card | null => {
@@ -104,7 +102,7 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
     };
 };
 
-export function DeckBuilderClient({ ownedTerms, onDeckComplete, isBattlePrep = false }: DeckBuilderClientProps) {
+export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const [craftingTerms, setCraftingTerms] = useState<Term[]>([]);
   const [cardName, setCardName] = useState('新卡牌');
   const [cardType, setCardType] = useState<CardType>('法术牌');
@@ -176,6 +174,15 @@ export function DeckBuilderClient({ ownedTerms, onDeckComplete, isBattlePrep = f
       toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
     }
   };
+
+  const handleSaveDeck = () => {
+    // In a real app, this would open a dialog to name the deck and save it to the backend.
+    if (deck.length === 0) {
+        toast({ title: '无法保存', description: '你的牌组是空的。', variant: 'destructive' });
+        return;
+    }
+    toast({ title: '牌组已保存！', description: '（此功能为占位符）' });
+  }
 
   const groupedCraftingTerms = useMemo(() => {
     const counts: { [id: string]: { term: Term; count: number } } = {};
@@ -331,14 +338,12 @@ export function DeckBuilderClient({ ownedTerms, onDeckComplete, isBattlePrep = f
           </Tabs>
         </div>
       </div>
-      {isBattlePrep && onDeckComplete && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-center">
-          <Button size="lg" className="font-headline text-lg" onClick={() => onDeckComplete(deck)}>
-            <Swords className="mr-2"/>
-            开始战斗
+          <Button size="lg" className="font-headline text-lg" onClick={handleSaveDeck}>
+            <Save className="mr-2"/>
+            保存牌组
           </Button>
         </div>
-      )}
     </>
   );
 }
