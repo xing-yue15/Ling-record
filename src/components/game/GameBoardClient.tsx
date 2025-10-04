@@ -21,7 +21,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   return (
     <div className="w-full h-full flex flex-col bg-transparent text-white p-2">
       {/* Opponent's Area */}
-      <div className="flex-grow">
+      <div className="flex-1">
         <PlayerArea player={opponent} isOpponent={true} />
       </div>
 
@@ -48,12 +48,12 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
       </div>
       
       {/* Player's Area */}
-      <div className="flex-grow">
+      <div className="flex-1">
         <PlayerArea player={player} isOpponent={false} />
       </div>
       
        {/* Player's Hand */}
-       <div className="absolute bottom-[-2rem] left-1/2 -translate-x-1/2 w-full max-w-5xl h-56 flex justify-center items-end gap-2 pb-4">
+       <div className="absolute bottom-[-6.5rem] left-1/2 -translate-x-1/2 w-full max-w-5xl h-56 flex justify-center items-end gap-2 pb-4">
             {player.hand.map((card, i) => (
                 <div key={card.id} style={{ transform: `translateX(${(i - player.hand.length/2) * 20}px)` }} className="w-40 h-56 transition-transform duration-300 hover:-translate-y-12 hover:scale-110 cursor-pointer relative">
                     <GameCard card={card} inHand={true} />

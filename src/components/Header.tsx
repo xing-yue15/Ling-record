@@ -1,8 +1,21 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Scroll, Swords } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 export function Header() {
+  const pathname = usePathname();
+  const inBattle = pathname.startsWith('/battle');
+
+  const navLinkClasses = (href: string) => cn(
+    "transition-colors hover:text-foreground/80 text-foreground/60",
+    inBattle && "pointer-events-none opacity-50"
+  );
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
@@ -15,13 +28,13 @@ export function Header() {
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
           <Link
             href="/deck-builder"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={navLinkClasses("/deck-builder")}
           >
             牌组构筑
           </Link>
           <Link
             href="/adventure"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
+            className={navLinkClasses("/adventure")}
           >
             冒险
           </Link>
