@@ -15,7 +15,7 @@ export default function Home() {
               灵记
             </h1>
             <p className="mt-6 text-lg leading-8 text-foreground/80">
-              用言语铸就你的命运。一款关于创造、策略和同步战斗的卡牌游戏。
+              一款自由diy卡牌对战，自主选牌的卡牌游戏
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Button asChild size="lg">
