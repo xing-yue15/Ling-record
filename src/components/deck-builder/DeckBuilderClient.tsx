@@ -500,7 +500,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
+            <TabsContent value="creator" className="mt-4 flex-grow-0 flex flex-col space-y-4">
               <div>
                 <UICard className="bg-card/50">
                   <CardHeader>
