@@ -19,10 +19,10 @@ export default function Home() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Button asChild size="lg">
-                <Link href="/adventure">开始冒险</Link>
+                <Link href="/login">登录</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/deck-builder">构筑牌组</Link>
+                <Link href="/signup">注册</Link>
               </Button>
             </div>
           </div>
