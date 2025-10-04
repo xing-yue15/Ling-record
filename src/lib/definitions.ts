@@ -46,7 +46,8 @@ export interface Player {
   hand: Card[];
   graveyard: Card[];
   board: (Creature | null)[];
-  playedCardThisTurn: boolean; // Add this
+  playedCardThisTurn: boolean;
+  turnHasSwappedCard: boolean; // Add this
 }
 
 export type GamePhase = 
@@ -64,7 +65,7 @@ export interface GameState {
   pvpScore: [number, number];
   currentEnvironment: string | null;
   activePlayerIndex: 0 | 1;
-  settlementZone: {card: Card, playerId: string}[];
+  settlementZone: {card: Card, playerId: string, target: {type: 'player' | 'creature', playerIndex: number, slotIndex?: number} | null}[];
   gamePhase: GamePhase;
   selectedHandCardIndex: number | null; // index of card in hand selected to be played
   selectedDeckCardIndex: number | null; // index of card in deck selected to be swapped
