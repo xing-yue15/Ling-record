@@ -1,6 +1,5 @@
 'use client';
 import { GameBoardClient } from "@/components/game/GameBoardClient";
-import { initialTerms } from "@/lib/initial-data";
 import { GameState } from "@/lib/definitions";
 
 export default function BattlePage({ params }: { params: { matchId: string } }) {
