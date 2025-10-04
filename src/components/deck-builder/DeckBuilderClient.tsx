@@ -94,7 +94,7 @@ const processTerms = (
 const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType): Card | null => {
   if (terms.length === 0) return null;
 
-  let totalCost = 0;
+  let baseCost = 0;
   const descriptionParts: string[] = [];
   let attack = 0;
   let health = 0;
@@ -108,7 +108,7 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
   if (mainResult.description) descriptionParts.push(mainResult.description);
   attack += mainResult.attack;
   health += mainResult.health;
-  let baseCost = mainResult.cost;
+  baseCost += mainResult.cost;
   multistrikeCount += mainResult.multistrike;
   
   // --- Process Limiter Groups ---
@@ -120,7 +120,6 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     
     const finalLimiterDesc = limiterDescTemplate
       .replace('??', childResult.description)
-      .replace(limiter.name, '')
       .trim();
     descriptionParts.push(finalLimiterDesc);
 
@@ -140,7 +139,7 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     }
   });
   
-  totalCost = baseCost;
+  let totalCost = baseCost;
 
   // Apply Multistrike cost
   if (multistrikeCount > 0) {
@@ -254,6 +253,7 @@ const CraftingAreaContent = ({
 
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
+  const searchParams = useSearchParams();
   const [mainTerms, setMainTerms] = useState<CraftingItem[]>([]);
   const [limiterTerms, setLimiterTerms] = useState<Term[]>([]);
   const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term, originalIndex?: number }>('main');
@@ -265,9 +265,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const searchParams = useSearchParams();
   const enemyId = searchParams.get('enemyId');
-  const DECK_MAX_COST = 500; 
 
   const termsInCurrentCraftingArea = useMemo(() => {
     return craftingMode === 'main' ? mainTerms : limiterTerms;
@@ -434,10 +432,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     const finalPreviewCard = createCardFromTerms(mainTerms, cardName, cardType);
 
     if (finalPreviewCard) {
-      if (deckTotalCost + finalPreviewCard.finalCost > DECK_MAX_COST) {
-        toast({ title: '已达消耗上限', description: `无法添加此卡牌，它会使牌组总消耗超过 ${DECK_MAX_COST}。`, variant: 'destructive'});
-        return;
-      }
       setDeck(prev => [...prev, finalPreviewCard]);
       setMainTerms([]);
       setLimiterTerms([]);
@@ -561,12 +555,9 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
-                      <div>
-                        <span className="text-sm text-muted-foreground">总消耗: </span>
-                        <span className="font-bold">{deckTotalCost} / {DECK_MAX_COST}</span>
-                      </div>
+                      
                     </div>
-                    <Progress value={(deckTotalCost / DECK_MAX_COST) * 100} className="mt-2 h-2" />
+                   
                 </CardHeader>
                 <CardContent className="flex-grow overflow-hidden">
                   <ScrollArea className="h-full">
@@ -612,3 +603,5 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </div>
   );
 }
+
+    
