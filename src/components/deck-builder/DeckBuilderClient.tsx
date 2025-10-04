@@ -91,80 +91,79 @@ const processTerms = (
 
 
 const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType): Card | null => {
-  if (terms.length === 0) return null;
+    if (terms.length === 0) return null;
 
-  let baseCost = 0;
-  const descriptionParts: string[] = [];
-  let attack = 0;
-  let health = 0;
-  let multistrikeCount = 0;
+    let baseCost = 0;
+    const descriptionParts: string[] = [];
+    let attack = 0;
+    let health = 0;
+    let multistrikeCount = 0;
 
-  const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
-  const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
+    const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
+    const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
 
-  // --- Process Main Terms ---
-  const mainResult = processTerms(mainTerms, type);
-  if (mainResult.description) descriptionParts.push(mainResult.description);
-  attack += mainResult.attack;
-  health += mainResult.health;
-  baseCost += mainResult.cost;
-  multistrikeCount += mainResult.multistrike;
-  
-  // --- Process Limiter Groups ---
-  limiterGroups.forEach(group => {
-    const limiter = group.limiter;
-    let limiterDescTemplate = limiter.description.spell || limiter.description.creature || '';
-    
-    const childResult = processTerms(group.children, type);
-    
-    const finalLimiterDesc = limiterDescTemplate
-      .replace('[触发特定效果]', childResult.description)
-      .replace('??', childResult.description)
-      .trim();
+    // --- Process Main Terms ---
+    const mainResult = processTerms(mainTerms, type);
+    if (mainResult.description) descriptionParts.push(mainResult.description);
+    attack += mainResult.attack;
+    health += mainResult.health;
+    baseCost += mainResult.cost;
+    multistrikeCount += mainResult.multistrike;
 
-    if(finalLimiterDesc) {
-       const naturalDesc = finalLimiterDesc.replace(limiter.name, "").trim().replace(/^：/, "").trim();
-       descriptionParts.push(naturalDesc);
-    }
-    
+    // --- Process Limiter Groups ---
+    limiterGroups.forEach(group => {
+        const limiter = group.limiter;
+        let limiterDescTemplate = limiter.description.spell || limiter.description.creature || '';
+        
+        const childResult = processTerms(group.children, type);
+        
+        const naturalDesc = childResult.description.replace(limiter.name, "").trim().replace(/^：/, "").trim();
+        
+        const finalLimiterDesc = limiterDescTemplate
+            .replace(/\[触发特定效果\]/g, naturalDesc)
+            .replace(/\?\?/g, naturalDesc);
 
-    // Limiter Cost Modifiers
-    if (typeof limiter.cost === 'string') {
-        if (limiter.cost.startsWith('*')) {
-            const multiplier = parseFloat(limiter.cost.substring(1));
-            baseCost += childResult.cost * multiplier;
-        } else if (limiter.cost.startsWith('/')) {
-            const divisor = parseFloat(limiter.cost.substring(1));
-            if (divisor !== 0) {
-              baseCost += Math.ceil(childResult.cost / divisor);
-            }
+        if(finalLimiterDesc) {
+            descriptionParts.push(finalLimiterDesc);
         }
-    } else if(typeof limiter.cost === 'number'){
-        baseCost += childResult.cost + limiter.cost;
+
+        // Limiter Cost Modifiers
+        if (typeof limiter.cost === 'string') {
+            if (limiter.cost.startsWith('*')) {
+                const multiplier = parseFloat(limiter.cost.substring(1));
+                baseCost += childResult.cost * multiplier;
+            } else if (limiter.cost.startsWith('/')) {
+                const divisor = parseFloat(limiter.cost.substring(1));
+                if (divisor !== 0) {
+                    baseCost += Math.ceil(childResult.cost / divisor);
+                }
+            }
+        } else if(typeof limiter.cost === 'number'){
+            baseCost += childResult.cost + limiter.cost;
+        }
+    });
+    
+    let totalCost = baseCost;
+
+    // Apply Multistrike cost
+    if (multistrikeCount > 0) {
+        totalCost = totalCost * (multistrikeCount + 1);
     }
-  });
-  
-  let totalCost = baseCost;
 
-  // Apply Multistrike cost
-  if (multistrikeCount > 0) {
-      totalCost = totalCost * (multistrikeCount + 1);
-  }
+    const finalCost = Math.max(1, Math.ceil(totalCost));
 
-  const finalCost = Math.max(1, Math.ceil(totalCost));
-
-  return {
-    id: `card-${Date.now()}`,
-    name,
-    // @ts-ignore - terms structure is complex
-    terms,
-    finalCost,
-    type,
-    description: descriptionParts.join('，'),
-    attack,
-    health,
-    artId: 'card-art-1',
-  };
+    return {
+        id: `card-${Date.now()}`,
+        name,
+        // @ts-ignore - terms structure is complex
+        terms,
+        finalCost,
+        type,
+        description: descriptionParts.join('，'),
+        attack,
+        health,
+        artId: 'card-art-1',
+    };
 };
 
 const CraftingAreaContent = ({
@@ -279,6 +278,8 @@ const useHorizontalScroll = () => {
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const searchParams = useSearchParams();
+  const enemyId = searchParams.get('enemyId');
+
   const [mainTerms, setMainTerms] = useState<CraftingItem[]>([]);
   const [limiterTerms, setLimiterTerms] = useState<Term[]>([]);
   const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term, originalIndex?: number }>('main');
@@ -289,8 +290,9 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  const enemyId = searchParams.get('enemyId');
+  
   const craftingAreaRef = useHorizontalScroll();
+  const limiterCraftingAreaRef = useHorizontalScroll();
 
 
   const termsInCurrentCraftingArea = useMemo(() => {
@@ -520,7 +522,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                             {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
                           </p>
                       ) : (
-                        <div ref={craftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                        <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
                            <CraftingAreaContent 
                              terms={termsInCurrentCraftingArea}
                              onRemove={removeTermFromCrafting}
@@ -614,6 +616,3 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </div>
   );
 }
-
-
-    
