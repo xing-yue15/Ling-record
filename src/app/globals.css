@@ -93,7 +93,7 @@ body {
   }
 
   ::-webkit-scrollbar-track {
-      background: hsl(var(--background));
+      background: hsl(var(--background) / 0.5);
   }
 
   ::-webkit-scrollbar-thumb {

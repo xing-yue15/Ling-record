@@ -490,8 +490,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex-grow min-h-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+            <TabsContent value="creator" className="mt-4 flex-grow min-h-0 flex flex-col">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow min-h-0">
                 <div className="space-y-8 flex flex-col">
                   <UICard className="bg-card/50">
                     <CardHeader>
@@ -556,7 +556,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               </div>
             </TabsContent>
 
-            <TabsContent value="deck" className="mt-4 flex-grow min-h-0">
+            <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
               <UICard className="bg-card/50 h-full flex flex-col">
                 <CardHeader>
                     <div className="flex justify-between items-center">
