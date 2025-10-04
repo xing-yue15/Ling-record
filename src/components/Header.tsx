@@ -18,7 +18,7 @@ export function Header() {
 
   const navLinkClasses = (href: string) => cn(
     "transition-colors hover:text-foreground/80",
-    pathname === href ? 'text-foreground' : 'text-foreground/60'
+    pathname.startsWith(href) ? 'text-foreground' : 'text-foreground/60'
   );
 
   return (
@@ -40,9 +40,9 @@ export function Header() {
                   牌组构筑
                 </Link>
               </Button>
-              <Button asChild variant="link" className={navLinkClasses("/adventure")}>
+              <Button asChild variant="link" className={navLinkClasses("/worlds")}>
                 <Link
-                  href="/adventure"
+                  href="/worlds"
                 >
                   冒险
                 </Link>
@@ -58,7 +58,16 @@ export function Header() {
             </div>
           </>
         )}
-         {isHomePage && <div className="flex-1"></div>}
+         {isHomePage && (
+            <div className="flex-1 items-center justify-end flex gap-2">
+               <Button asChild variant="ghost">
+                <Link href="/login">登录</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">注册</Link>
+              </Button>
+            </div>
+         )}
       </div>
     </header>
   );
