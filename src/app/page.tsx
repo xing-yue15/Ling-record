@@ -7,8 +7,8 @@ export default function Home() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero');
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="relative isolate overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-20">
+    <div className="container mx-auto py-8 px-4 flex-grow flex items-center justify-center">
+      <div className="relative isolate overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-20 w-full">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="font-headline text-4xl font-bold tracking-tight text-primary sm:text-6xl">
@@ -49,38 +49,6 @@ export default function Home() {
           />
         </div>
       </div>
-      
-      {/* Added content to make page scrollable */}
-      <div className="py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h2 className="text-center text-lg font-semibold leading-8 text-foreground/80">
-            游戏特色
-          </h2>
-          <div className="mx-auto mt-10 grid max-w-lg grid-cols-4 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:grid-cols-6 sm:gap-x-10 lg:mx-0 lg:max-w-none lg:grid-cols-5">
-            <div className="col-span-2 max-h-12 w-full object-contain lg:col-span-1 text-center">
-                <h3 className="text-2xl font-headline">自由构筑</h3>
-                <p className="text-sm text-muted-foreground">组合词条，创造无限可能</p>
-            </div>
-            <div className="col-span-2 max-h-12 w-full object-contain lg:col-span-1 text-center">
-                 <h3 className="text-2xl font-headline">策略对战</h3>
-                <p className="text-sm text-muted-foreground">与不同敌人斗智斗勇</p>
-            </div>
-             <div className="col-span-2 max-h-12 w-full object-contain lg:col-span-1 text-center">
-                 <h3 className="text-2xl font-headline">探索世界</h3>
-                <p className="text-sm text-muted-foreground">解锁风格迥异的冒险</p>
-            </div>
-             <div className="col-span-2 max-h-12 w-full object-contain sm:col-start-2 lg:col-span-1 text-center">
-                 <h3 className="text-2xl font-headline">持续成长</h3>
-                <p className="text-sm text-muted-foreground">在战斗中获取新的力量</p>
-            </div>
-             <div className="col-span-2 col-start-2 max-h-12 w-full object-contain sm:col-start-auto lg:col-span-1 text-center">
-                 <h3 className="text-2xl font-headline">AI 赋能</h3>
-                <p className="text-sm text-muted-foreground">体验动态生成的挑战</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }
