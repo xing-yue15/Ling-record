@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { produce } from 'immer';
 import { PlayerArea } from './PlayerArea';
 import { Button } from '@/components/ui/button';
 import { GameCard } from './Card';
-import { Library, Recycle } from 'lucide-react';
+import { Library } from 'lucide-react';
 import type { GameState, Card as CardData, Creature } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -19,22 +19,27 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   const [gameState, setGameState] = useState(initialState);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (gameState.gamePhase === 'placement') {
+      toast({ title: '选择一个位置', description: '在你的场上选择一个空的格子来放置该造物。' });
+    }
+  }, [gameState.gamePhase, toast]);
+
+
   const activePlayer = gameState.players[gameState.activePlayerIndex];
   const opponentPlayer = gameState.players[1 - gameState.activePlayerIndex];
   const isPlayerTurn = gameState.activePlayerIndex === 0;
 
-  // Placeholder for card cost check (will be more complex)
-  const canPlayCard = (card: CardData): boolean => {
-    // This will be replaced with logic for "燃血" (health cost), "舍弃" (discard cost), etc.
-    // For now, all cards can be played.
-    return true;
-  };
-
   const handleCardPlay = (cardIndex: number) => {
-    if (!isPlayerTurn || gameState.gamePhase === 'placement') return;
+    if (!isPlayerTurn || gameState.gamePhase !== 'main') return;
 
     const card = activePlayer.hand[cardIndex];
-    if (!canPlayCard(card)) {
+    
+    // Placeholder for cost check
+    // In the future, this will check for health cost, discard cost etc.
+    const canPlay = true; 
+
+    if (!canPlay) {
       toast({
         title: '无法出牌',
         description: `不满足此牌的打出条件。`,
@@ -49,7 +54,6 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
       if (card.type === '造物牌') {
         draft.selectedHandCardIndex = cardIndex;
         draft.gamePhase = 'placement';
-        toast({ title: '选择一个位置', description: '在你的场上选择一个空的格子来放置该造物。' });
       } else {
         // Spell card
         const [playedCard] = player.hand.splice(cardIndex, 1);
@@ -59,7 +63,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   };
   
   const handleBoardSlotClick = (slotIndex: number) => {
-    if (gameState.gamePhase !== 'placement' || gameState.selectedHandCardIndex === null) return;
+    if (gameState.gamePhase !== 'placement' || gameState.selectedHandCardIndex === null || !isPlayerTurn) return;
     
     setGameState(produce(draft => {
       const player = draft.players[draft.activePlayerIndex];
@@ -90,44 +94,41 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   };
 
   const endTurn = () => {
-    // This is where both players' chosen cards would be revealed and resolved.
-    // For now, we will simulate a simple turn end.
-    if (!isPlayerTurn) return;
+    if (!isPlayerTurn || gameState.gamePhase === 'placement') return;
 
     setGameState(produce(draft => {
         
-      // Clear settlement zone (cards would be resolved here)
+      // --- Simultaneous Resolution Phase (placeholder) ---
+      // 1. Sort cards in settlementZone based on priority
+      // 2. Resolve card effects sequentially
       draft.settlementZone = [];
 
-      // 1. **Creature Combat Phase**
+      // --- Creature Combat Phase ---
       const attacker = draft.players[draft.activePlayerIndex];
       const defender = draft.players[1 - draft.activePlayerIndex];
 
       attacker.board.forEach((creature, i) => {
         if (creature && creature.canAttack) {
-          // In the future, creatures will attack the player if no opposing creature.
-          // For now, let's simplify and just have them attack the player.
+          // Simplified: attack player directly
           defender.health -= creature.attack;
         }
       });
+       defender.board.forEach((creature, i) => {
+        if (creature && creature.canAttack) {
+          attacker.health -= creature.attack;
+        }
+      });
       
-      // Remove dead creatures (simplified, no combat damage between creatures yet)
-      
-      // Check for player death
-      if (defender.health <= 0) {
+      // --- End of Turn Phase ---
+      if (attacker.health <= 0 || defender.health <= 0) {
           draft.gamePhase = 'end';
           // Handle game over logic
           return;
       }
       
-      // 2. **Switch Active Player**
-      // In a simultaneous system, this might work differently, but for now we'll toggle.
-      // This part of the logic will need significant rework for simultaneous turns.
-      
-      // 3. **Start of New Turn**
       draft.turnCount += 1;
       
-      // Both players get their turn-based actions reset
+      // Reset per-turn flags for both players
       draft.turnHasSwappedCard = false;
 
       // Wake up all creatures on the board for the next turn's combat
@@ -143,13 +144,11 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
               p.health -= Math.ceil(p.maxHealth * 0.2);
           }
       });
-
     }));
   };
 
-
   return (
-    <div className="w-full h-screen flex flex-col bg-transparent text-white p-2 overflow-hidden">
+    <div className="w-full h-screen flex flex-col bg-transparent text-white p-2 overflow-hidden fixed inset-0">
       {/* Opponent's Area */}
       <div className="flex-1">
         <PlayerArea player={opponentPlayer} isOpponent={true} />
@@ -197,7 +196,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
        <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-5xl h-56 flex justify-center items-end gap-2 pb-4">
             {activePlayer.hand.map((card, i) => (
                 <div 
-                    key={card.id} 
+                    key={card.id + i} 
                     className={cn("w-40 h-56 transition-all duration-300 hover:-translate-y-12 hover:scale-110 relative",
                         isPlayerTurn ? "cursor-pointer" : "cursor-not-allowed",
                         gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
