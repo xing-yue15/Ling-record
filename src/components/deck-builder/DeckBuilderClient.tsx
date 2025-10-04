@@ -501,8 +501,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex-grow min-h-0 flex flex-col">
-              <div className="space-y-8 flex flex-col flex-grow">
+            <TabsContent value="creator" className="mt-4 min-h-0 flex flex-col space-y-8">
+              <div>
                 <UICard className="bg-card/50">
                   <CardHeader>
                     <div className="flex items-center gap-2 justify-between">
@@ -533,28 +533,28 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                     )}
                   </CardContent>
                 </UICard>
-
-                {(craftingMode === 'main' && mainTerms.length > 0) && (
-                  <UICard className="bg-card/50">
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="flex gap-2">
-                            <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
-                            <Button onClick={handleGenerateName} disabled={isGenerating}>
-                                {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                <span className="ml-2 hidden sm:inline">AI取名</span>
-                            </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
-                        <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
-                      </div>
-                      <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
-                        添加到牌组
-                      </Button>
-                    </CardContent>
-                  </UICard>
-                )}
               </div>
+
+              {(craftingMode === 'main' && mainTerms.length > 0) && (
+                <UICard className="bg-card/50">
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex gap-2">
+                          <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
+                          <Button onClick={handleGenerateName} disabled={isGenerating}>
+                              {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                              <span className="ml-2 hidden sm:inline">AI取名</span>
+                          </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
+                      <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
+                    </div>
+                    <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
+                      添加到牌组
+                    </Button>
+                  </CardContent>
+                </UICard>
+              )}
             </TabsContent>
 
             <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
@@ -595,13 +595,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
         {/* Right Column: Card Preview */}
         <div className="w-1/4 flex justify-center">
-          <div className="w-64 h-96 mt-16">
-            {previewCard ? <GameCard card={previewCard} /> :
-              <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                  <p className="text-muted-foreground">卡牌预览</p>
-              </div>
-            }
-          </div>
+            <div className="w-64 h-96 mt-16">
+                {previewCard ? <GameCard card={previewCard} /> :
+                <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                    <p className="text-muted-foreground">卡牌预览</p>
+                </div>
+                }
+            </div>
         </div>
       </div>
       <div className="flex-shrink-0 p-4 bg-background/80 border-t border-border backdrop-blur-sm flex justify-between items-center mt-4">
