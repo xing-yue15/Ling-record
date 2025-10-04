@@ -33,7 +33,8 @@ export interface Creature {
   health: number;
   maxHealth: number;
   type: '造物牌'; // To distinguish it on the board
-  artId: string;
+  artId:string;
+  canAttack: boolean; // Summoning sickness
 }
 
 export interface Player {
@@ -55,5 +56,7 @@ export interface GameState {
   pvpScore: [number, number];
   currentEnvironment: string | null;
   activePlayerIndex: 0 | 1;
-  settlementZone: Card[];
+  settlementZone: {card: Card, playerId: string}[];
+  gamePhase: 'main' | 'combat' | 'end' | 'placement';
+  selectedHandCardIndex: number | null;
 }

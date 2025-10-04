@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Shield, Swords } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { GameCard } from './Card';
 import type { Player } from '@/lib/definitions';
 import { ManaIcon } from '@/components/icons/GameIcons';
@@ -9,12 +9,13 @@ import { ManaIcon } from '@/components/icons/GameIcons';
 interface PlayerAreaProps {
   player: Player;
   isOpponent: boolean;
+  onBoardClick?: (index: number) => void;
+  isPlacing?: boolean;
 }
 
-export function PlayerArea({ player, isOpponent }: PlayerAreaProps) {
+export function PlayerArea({ player, isOpponent, onBoardClick, isPlacing = false }: PlayerAreaProps) {
   return (
-    <div className={cn("flex flex-col h-full w-full justify-between", isOpponent ? 'flex-col-reverse' : 'flex-col')}>
-      {/* Board (Creature Slots) */}
+    <div className={cn("flex flex-col h-full w-full justify-center")}>
       <div className="flex-grow flex items-center justify-between px-8">
         {/* Player Info */}
         <div className="flex flex-col items-center gap-2 w-24">
@@ -36,8 +37,19 @@ export function PlayerArea({ player, isOpponent }: PlayerAreaProps) {
         {/* Creature Slots */}
         <div className="flex gap-4">
             {Array(6).fill(null).map((_, i) => (
-                <div key={i} className="w-28 h-40 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center bg-black/20 hover:border-primary/50 transition-colors">
-                    {player.board[i] && <GameCard card={player.board[i]} className="w-full h-full"/>}
+                <div 
+                    key={i} 
+                    className={cn(
+                        "w-28 h-40 rounded-lg border-2 border-dashed border-border/30 flex items-center justify-center bg-black/20 transition-colors",
+                        !isOpponent && onBoardClick && "cursor-pointer",
+                        isPlacing && !player.board[i] && "border-primary/80 bg-primary/20 animate-pulse",
+                        player.board[i] && isPlacing && "cursor-not-allowed"
+                    )}
+                    onClick={() => !isOpponent && onBoardClick?.(i)}
+                >
+                    {player.board[i] ? <GameCard card={player.board[i]} className="w-full h-full"/> : (
+                        isPlacing && <span className='text-primary text-sm'>放置</span>
+                    )}
                 </div>
             ))}
         </div>
