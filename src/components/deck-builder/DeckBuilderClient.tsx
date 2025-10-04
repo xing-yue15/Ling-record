@@ -24,101 +24,145 @@ interface LimiterGroup {
 
 type CraftingItem = Term | LimiterGroup;
 
+const processTerms = (
+  termList: Term[],
+  cardType: CardType
+): { description: string; attack: number; health: number; cost: number; multistrike: number } => {
+  if (termList.length === 0) return { description: '', attack: 0, health: 0, cost: 0, multistrike: 0 };
+
+  const termCounts: { [id: string]: number } = {};
+  const uniqueTerms: Term[] = [];
+
+  termList.forEach(term => {
+    termCounts[term.id] = (termCounts[term.id] || 0) + 1;
+    if (!uniqueTerms.some(t => t.id === term.id)) {
+      uniqueTerms.push(term);
+    }
+  });
+
+  const descs: string[] = [];
+  let currentAttack = 0;
+  let currentHealth = 0;
+  let currentCost = 0;
+  let currentMultistrike = 0;
+
+  uniqueTerms.forEach(term => {
+    const count = termCounts[term.id];
+    const descTemplate = cardType === '法术牌' ? term.description.spell : term.description.creature;
+
+    if (descTemplate) {
+      const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
+        const num = numStr ? parseInt(numStr, 10) : 1;
+        return (num * count).toString();
+      }).trim();
+
+      if (finalDesc) descs.push(finalDesc);
+    }
+
+    if (cardType === '造物牌') {
+      const attackMatch = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
+      if (attackMatch) {
+        const baseAttack = attackMatch[1] ? parseInt(attackMatch[1]) : 1;
+        currentAttack += baseAttack * count;
+      }
+      const healthMatch = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
+      if (healthMatch) {
+        const baseHealth = healthMatch[1] ? parseInt(healthMatch[1]) : 1;
+        currentHealth += baseHealth * count;
+      }
+    }
+    
+    if (term.id === 'multistrike') {
+        currentMultistrike += count;
+    }
+
+    // Cost Calculation
+    if (typeof term.cost === 'number') {
+      currentCost += term.cost * count;
+    } else if (typeof term.cost === 'string') {
+      if (term.cost.includes('X')) {
+        const costVal = parseInt(term.cost.replace('X', ''), 10) || 1;
+        currentCost += costVal * count;
+      } else if (term.cost.startsWith('*')) {
+        // Multipliers are handled at the end
+      } else if (term.cost.startsWith('/')) {
+        // Divisors are handled at the end
+      }
+    }
+  });
+  
+  return { description: descs.join(' '), attack: currentAttack, health: currentHealth, cost: currentCost, multistrike: currentMultistrike };
+};
+
+
 const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType): Card | null => {
-    if (terms.length === 0) return null;
+  if (terms.length === 0) return null;
 
-    let totalCost = 0;
-    const descriptionParts: string[] = [];
-    let attack = 0;
-    let health = 0;
+  let totalCost = 0;
+  const descriptionParts: string[] = [];
+  let attack = 0;
+  let health = 0;
+  let multistrikeCount = 0;
+  let costMultiplier = 1;
+  let costDivisor = 1;
+
+  const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
+  const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
+
+  // --- Process Main Terms ---
+  const mainResult = processTerms(mainTerms, type);
+  if (mainResult.description) descriptionParts.push(mainResult.description);
+  attack += mainResult.attack;
+  health += mainResult.health;
+  totalCost += mainResult.cost;
+  multistrikeCount += mainResult.multistrike;
+
+  // --- Process Limiter Groups ---
+  limiterGroups.forEach(group => {
+    const limiter = group.limiter;
+    let limiterDescTemplate = limiter.description.spell || limiter.description.creature || '';
     
-    const mainTerms = terms.filter(t => !('limiter' in t)) as Term[];
-    const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
-
-    // --- Process Main Terms ---
-    const processTerms = (termList: Term[], cardType: CardType): { description: string, attack: number, health: number } => {
-        if (termList.length === 0) return { description: '', attack: 0, health: 0 };
-
-        const termCounts: { [id: string]: number } = {};
-        const uniqueTerms: Term[] = [];
-        let currentAttack = 0;
-        let currentHealth = 0;
-
-        termList.forEach(term => {
-            termCounts[term.id] = (termCounts[term.id] || 0) + 1;
-            if (!uniqueTerms.some(t => t.id === term.id)) {
-                uniqueTerms.push(term);
-            }
-        });
-
-        const descs: string[] = [];
-        uniqueTerms.forEach(term => {
-            const count = termCounts[term.id];
-            const descTemplate = cardType === '法术牌' ? term.description.spell : term.description.creature;
-            
-            if (descTemplate) {
-                const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
-                    const num = numStr ? parseInt(numStr, 10) : 1;
-                    return (num * count).toString();
-                });
-                if (finalDesc.trim()) descs.push(finalDesc);
-            }
-            
-            if (cardType === '造物牌') {
-                const attackMatch = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
-                if (attackMatch) {
-                    const baseAttack = attackMatch[1] ? parseInt(attackMatch[1]) : 1;
-                    currentAttack += baseAttack * count;
-                }
-                const healthMatch = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
-                if (healthMatch) {
-                    const baseHealth = healthMatch[1] ? parseInt(healthMatch[1]) : 1;
-                    currentHealth += baseHealth * count;
-                }
-            }
-        });
-        return { description: descs.join(' ').trim(), attack: currentAttack, health: currentHealth };
-    };
+    const childResult = processTerms(group.children, type);
+    totalCost += childResult.cost;
     
-    const mainResult = processTerms(mainTerms, type);
-    if (mainResult.description) descriptionParts.push(mainResult.description);
-    attack += mainResult.attack;
-    health += mainResult.health;
+    const finalLimiterDesc = `[${limiter.name}]: ${limiterDescTemplate.replace('??', childResult.description)}`;
+    descriptionParts.push(finalLimiterDesc);
 
-    // --- Process Limiter Groups ---
-    limiterGroups.forEach(group => {
-        const limiter = group.limiter;
-        let limiterDescTemplate = type === '法术牌' ? limiter.description.spell : limiter.description.creature;
-        
-        const childResult = processTerms(group.children, type);
-        
-        const finalLimiterDesc = `[${limiter.name}]: ${limiterDescTemplate.replace('??', childResult.description)}`;
-        descriptionParts.push(finalLimiterDesc);
-    });
-
-    // --- Naive Cost Calculation (Placeholder) ---
-    terms.forEach(item => {
-        if ('limiter' in item) {
-            // Very naive cost logic for now
-            item.children.forEach(child => { totalCost += (typeof child.cost === 'number' ? child.cost : 1); });
-        } else {
-            totalCost += (typeof item.cost === 'number' ? item.cost : 1);
+    // Limiter Cost Modifiers
+    if (typeof limiter.cost === 'string') {
+        if (limiter.cost.startsWith('*')) {
+            costMultiplier *= parseFloat(limiter.cost.substring(1));
+        } else if (limiter.cost.startsWith('/')) {
+            costDivisor *= parseFloat(limiter.cost.substring(1));
         }
-    });
-    const finalCost = Math.max(1, Math.ceil(totalCost));
+    }
+  });
+  
+  // Apply cost modifiers from limiters
+  if (costDivisor !== 0) {
+      totalCost = totalCost / costDivisor;
+  }
+  totalCost = totalCost * costMultiplier;
 
-    return {
-        id: `card-${Date.now()}`,
-        name,
-        // @ts-ignore - terms structure is complex
-        terms,
-        finalCost,
-        type,
-        description: descriptionParts.join(' ').trim(),
-        attack,
-        health,
-        artId: 'card-art-1',
-    };
+  // Apply Multistrike cost
+  if (multistrikeCount > 0) {
+      totalCost = totalCost * (multistrikeCount + 1);
+  }
+
+  const finalCost = Math.max(1, Math.ceil(totalCost));
+
+  return {
+    id: `card-${Date.now()}`,
+    name,
+    // @ts-ignore - terms structure is complex
+    terms,
+    finalCost,
+    type,
+    description: descriptionParts.join(' ').trim(),
+    attack,
+    health,
+    artId: 'card-art-1',
+  };
 };
 
 const CraftingAreaContent = ({
@@ -139,10 +183,10 @@ const CraftingAreaContent = ({
       const isNumeric = term.name.includes('X');
       const isUnique = !isNumeric || term.type === '限定';
       
-      const key = isGroup ? `${term.id}-${index}` : term.id;
+      const key = term.id;
 
-      if (isUnique) {
-         // Unique key for groups and non-numeric terms to prevent grouping
+      if (isGroup || isUnique) {
+        // Unique key for groups and non-numeric/limiter terms to prevent grouping
         termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
       } else {
         if (!termMap[key]) {
@@ -159,7 +203,7 @@ const CraftingAreaContent = ({
   return (
     <div className="flex w-max space-x-4">
       {groupedTerms.map(({ item, count, originalIndices }) => {
-        const originalIndex = originalIndices[originalIndices.length-1]; // Use last index for removal
+        const originalIndex = originalIndices[originalIndices.length-1];
 
         if ('limiter' in item) {
           const group = item as LimiterGroup;
@@ -260,7 +304,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   }, [deck]);
 
   const addTermToCrafting = (term: Term) => {
-    // Entering limiter edit mode
     if (term.type === '限定') {
       if (craftingMode !== 'main') {
           toast({
@@ -283,12 +326,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       return;
     }
     
-    const currentTerms = craftingMode === 'main' ? mainTerms : limiterTerms;
     const isNumericTerm = term.name.includes('X');
-    const isTermInArea = (t: CraftingItem): t is Term => !('limiter' in t);
     
     if (!isNumericTerm) {
-      const isAlreadyInCrafting = (craftingMode === 'main' ? mainTerms : limiterTerms)
+      const currentArea = craftingMode === 'main' ? mainTerms : limiterTerms;
+      const isTermInArea = (t: CraftingItem): t is Term => !('limiter' in t);
+      
+      const isAlreadyInCrafting = currentArea
         .filter(isTermInArea)
         .some(existingTerm => existingTerm.id === term.id);
 
@@ -301,7 +345,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         return;
       }
     }
-
 
     if (craftingMode === 'main') {
         setMainTerms(prev => [...prev, term]);
@@ -322,9 +365,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     const termToRemove = area.find((t, i) => !('limiter' in t) && t.id === termId);
     if (!termToRemove) return;
 
-    const isNumeric = termToRemove.name.includes('X');
+    const isNumeric = (termToRemove as Term).name.includes('X');
     if (isNumeric) {
-      // Find the last occurrence of this numeric term to remove
       let lastIndex = -1;
       for (let i = area.length - 1; i >= 0; i--) {
         const currentTerm = area[i];
@@ -337,15 +379,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         setArea(prev => prev.filter((_, i) => i !== lastIndex));
       }
     } else {
-      // Remove non-numeric term by ID
-      setArea(prev => prev.filter(t => !('limiter' in t && t.id === termId)));
+      setArea(prev => prev.filter(t => ('limiter' in t) || t.id !== termId));
     }
   };
 
   const handleLimiterGroupClick = (group: LimiterGroup, index: number) => {
     setCraftingMode({ limiter: group.limiter, originalIndex: index });
     setLimiterTerms(group.children);
-    // Remove the old group from mainTerms, it will be added back on completion
     setMainTerms(prev => prev.filter((_, i) => i !== index));
   };
   
@@ -355,7 +395,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     } else {
       setLimiterTerms([]);
     }
-    // Keep card name for consistency, user can reset it
   }
 
   const completeLimiterEditing = () => {
@@ -392,7 +431,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   
   const addCardToDeck = () => {
     if (craftingMode !== 'main') {
-        toast({ title: '请先完成限定词编辑', description: '点击“返回主制作区”以完成当前限定词的构筑。', variant: 'destructive' });
+        toast({ title: '请先完成限定词编辑', description: '点击“完成”以完成当前限定词的构筑。', variant: 'destructive' });
         return;
     }
 
@@ -577,7 +616,3 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </>
   );
 }
-
-    
-
-    
