@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -75,7 +76,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const enemyId = searchParams.get('enemyId');
-  const DECK_MAX_COST = 500; // Restored the deck cost limit
+  const DECK_MAX_COST = 500; 
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -315,3 +316,5 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     </>
   );
 }
+
+    

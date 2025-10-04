@@ -1,3 +1,4 @@
+
 import type { Term } from './definitions';
 
 export const initialTerms: Term[] = [
@@ -128,7 +129,7 @@ export const initialTerms: Term[] = [
   {
     id: 'primal-seal',
     name: '封印X',
-    type: '特殊',
+    type: '基础',
     cost: '40X', 
     description: {
       spell: '目标X回合内不能使用法术牌。',
@@ -139,7 +140,7 @@ export const initialTerms: Term[] = [
   {
     id: 'primal-demise',
     name: '破灭',
-    type: '特殊',
+    type: '基础',
     cost: 35,
     description: {
       spell: '抵消结算阶段下一张法术牌。',
@@ -150,7 +151,7 @@ export const initialTerms: Term[] = [
   {
     id: 'primal-omnipotence',
     name: '全能X',
-    type: '特殊',
+    type: '基础',
     cost: '1000X', 
     description: {
       spell: '选择一张已知卡牌，增加或减少其X个基础/特殊词条。',
@@ -185,7 +186,7 @@ export const initialTerms: Term[] = [
   {
     id: 'chaos-overdraft',
     name: '透支X',
-    type: '特殊',
+    type: '基础',
     cost: '0',
     description: {
       spell: '从牌库中随机抽取X张牌（回合结束时弃牌，直到等于6张）。',
@@ -196,7 +197,7 @@ export const initialTerms: Term[] = [
   {
     id: 'chaos-substitution',
     name: '代换X',
-    type: '特殊',
+    type: '基础',
     cost: '50X',
     description: {
       spell: '选择你手中的X张牌，向你的对手发起一次交换提议...[详细规则见文档]',
@@ -207,7 +208,7 @@ export const initialTerms: Term[] = [
   {
     id: 'chaos-transfer',
     name: '转移X',
-    type: '特殊',
+    type: '基础',
     cost: '40X',
     description: {
       spell: '目标下X张法术牌，目标由你决定。',
@@ -242,7 +243,7 @@ export const initialTerms: Term[] = [
   {
     id: 'life-parasite',
     name: '寄生X',
-    type: '特殊',
+    type: '基础',
     cost: '3X', 
     description: {
       spell: '给予目标寄生2X（寄生X:回合结束时生命-X，施法者生命+X）。',
@@ -253,7 +254,7 @@ export const initialTerms: Term[] = [
   {
     id: 'life-rebirth',
     name: '新生3X',
-    type: '特殊',
+    type: '基础',
     cost: '5X', 
     description: {
       spell: '目标生命值及上限+3X。',
@@ -264,7 +265,7 @@ export const initialTerms: Term[] = [
   {
     id: 'life-revive',
     name: '复活X',
-    type: '特殊',
+    type: '基础',
     cost: '30+10X', 
     description: {
       spell: '选择2X个死亡造物进入己方战场。',
@@ -299,7 +300,7 @@ export const initialTerms: Term[] = [
   {
     id: 'death-void',
     name: '虚无X',
-    type: '特殊',
+    type: '基础',
     cost: '70X', 
     description: {
       spell: 'X回合内无敌。',
@@ -310,7 +311,7 @@ export const initialTerms: Term[] = [
   {
     id: 'death-wither',
     name: '凋零X',
-    type: '特殊',
+    type: '基础',
     cost: '15X',
     description: {
       spell: '消灭所有生命值小于或等于2X的敌方造物。',
@@ -321,7 +322,7 @@ export const initialTerms: Term[] = [
   {
     id: 'death-aegis',
     name: '冥护X',
-    type: '特殊',
+    type: '基础',
     cost: '15X', 
     description: {
       spell: '本回合内目标的生命值不会低于X点。',
@@ -356,7 +357,7 @@ export const initialTerms: Term[] = [
   {
     id: 'love-unison',
     name: '同心X',
-    type: '特殊',
+    type: '基础',
     cost: '20X', 
     description: {
       spell: '选择2个目标，使其在X回合内共享受到的所有效果（数值平均分配）。',
@@ -367,7 +368,7 @@ export const initialTerms: Term[] = [
   {
     id: 'love-charm',
     name: '魅惑X',
-    type: '特殊',
+    type: '基础',
     cost: '10X',
     description: {
       spell: '夺取一个攻击力小于或等于2X的敌方造物的控制权。',
@@ -378,7 +379,7 @@ export const initialTerms: Term[] = [
   {
     id: 'love-devotion',
     name: '奉献X',
-    type: '特殊',
+    type: '基础',
     cost: '5X',
     description: {
       spell: '选择并消灭一个生命值小于或等于2X的造物，施法者获得其全部生命值。',
@@ -413,7 +414,7 @@ export const initialTerms: Term[] = [
   {
     id: 'slaughter-expose',
     name: '破绽X',
-    type: '特殊',
+    type: '基础',
     cost: '4X', 
     description: {
       spell: '本局目标获得的护甲值减少2X点。',
@@ -424,7 +425,7 @@ export const initialTerms: Term[] = [
   {
     id: 'slaughter-execute',
     name: '杀机X',
-    type: '特殊',
+    type: '基础',
     cost: '4X', 
     description: {
       spell: '击杀生命值低于2X的敌方单位。',
@@ -435,7 +436,7 @@ export const initialTerms: Term[] = [
   {
     id: 'slaughter-frenzy',
     name: '狂暴X',
-    type: '特殊',
+    type: '基础',
     cost: '20X', 
     description: {
       spell: 'X回合内，目标造成的伤害和受到的伤害翻倍。',
@@ -470,7 +471,7 @@ export const initialTerms: Term[] = [
   {
     id: 'happiness-guardian',
     name: '守护',
-    type: '特殊',
+    type: '基础',
     cost: 40,
     description: {
       spell: '己方造物单位不受敌方法术效果影响。',
@@ -481,7 +482,7 @@ export const initialTerms: Term[] = [
   {
     id: 'happiness-grace',
     name: '恩泽X',
-    type: '特殊',
+    type: '基础',
     cost: '12X',
     description: {
       spell: '2X回合内自身debuff不会生效。',
@@ -492,7 +493,7 @@ export const initialTerms: Term[] = [
   {
     id: 'happiness-rapture',
     name: '沉醉X',
-    type: '特殊',
+    type: '基础',
     cost: '35X', 
     description: {
       spell: 'X回合内，敌方所有造物无法触发效果。',
@@ -527,7 +528,7 @@ export const initialTerms: Term[] = [
   {
     id: 'pain-torment',
     name: '折磨X',
-    type: '特殊',
+    type: '基础',
     cost: '15X',
     description: {
       spell: '选择一张随机或已知法术，摧毁其X张相同法术。',
@@ -538,7 +539,7 @@ export const initialTerms: Term[] = [
   {
     id: 'pain-brand',
     name: '烙印X',
-    type: '特殊',
+    type: '基础',
     cost: '15X',
     description: {
       spell: '往牌库中洗入X张本法术0消耗复制。',
@@ -549,7 +550,7 @@ export const initialTerms: Term[] = [
   {
     id: 'pain-suffering',
     name: '受难X',
-    type: '特殊',
+    type: '基础',
     cost: '4X', 
     description: {
       spell: '给予目标受难2X(受难X: 每打出一张牌受到X点伤害)。',
@@ -584,7 +585,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fearless-legacy',
     name: '传承X',
-    type: '特殊',
+    type: '基础',
     cost: '6X',
     description: {
       spell: '给予一个造物目标传承2X(传承X: 造物获得+X/+X，其死亡后将该增益给予其他随机存活的友方造物；若没有其他造物，则为施法者恢复X点生命值)。',
@@ -595,7 +596,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fearless-steadfast',
     name: '屹立X',
-    type: '特殊',
+    type: '基础',
     cost: '8X', 
     description: {
       spell: '选择一个己方造物获得屹立2（屹立X:造物获得+X/+X，若该造物在你的下个回合开始时仍存活，则再次获得+X/+X并重复此效果）。',
@@ -606,7 +607,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fearless-command',
     name: '号令X',
-    type: '特殊',
+    type: '基础',
     cost: '25X', 
     description: {
       spell: '选择一个目标，所有己方造物对其发动X次攻击。',
@@ -641,7 +642,7 @@ export const initialTerms: Term[] = [
   {
     id: 'cowardice-retreat',
     name: '退缩',
-    type: '特殊',
+    type: '基础',
     cost: 10,
     description: {
       spell: '受到的伤害优先由己方造物承受。',
@@ -652,7 +653,7 @@ export const initialTerms: Term[] = [
   {
     id: 'cowardice-disintegrate',
     name: '瓦解X',
-    type: '特殊',
+    type: '基础',
     cost: '20X',
     description: {
       spell: '敌方下一次出牌消耗-40X。',
@@ -663,7 +664,7 @@ export const initialTerms: Term[] = [
   {
     id: 'cowardice-suppress',
     name: '压制X',
-    type: '特殊',
+    type: '基础',
     cost: '18X',
     description: {
       spell: '敌方下2X张打出的牌所有数值减半。',
@@ -687,7 +688,7 @@ export const initialTerms: Term[] = [
   {
     id: 'metal-cleave',
     name: '切割X',
-    type: '特殊',
+    type: '基础',
     cost: '2X', 
     description: {
       spell: '目标的生命值及上限同时减少2X。',
@@ -698,7 +699,7 @@ export const initialTerms: Term[] = [
   {
     id: 'metal-forge',
     name: '铸形X',
-    type: '特殊',
+    type: '基础',
     cost: '12X',
     description: {
       spell: '本局玩家每受到一次伤害后本牌消耗+6X。',
@@ -709,7 +710,7 @@ export const initialTerms: Term[] = [
   {
     id: 'metal-cage',
     name: '囚笼X',
-    type: '特殊',
+    type: '基础',
     cost: '35X',
     description: {
       spell: '将战场变为铸铁囚笼（敌人战场格子-X，上限为6）。',
@@ -744,7 +745,7 @@ export const initialTerms: Term[] = [
   {
     id: 'wood-entangle',
     name: '缠绕X',
-    type: '特殊',
+    type: '基础',
     cost: '8X',
     description: {
       spell: '2X回合内，目标造物在其回合结束时，失去其“攻击力与生命值差值”的生命值。',
@@ -755,7 +756,7 @@ export const initialTerms: Term[] = [
   {
     id: 'wood-blight',
     name: '枯萎X',
-    type: '特殊',
+    type: '基础',
     cost: '12X',
     description: {
       spell: '2X回合内目标无法恢复生命值。',
@@ -766,10 +767,10 @@ export const initialTerms: Term[] = [
   {
     id: 'wood-overgrowth',
     name: '蔓生X',
-    type: '特殊',
+    type: '基础',
     cost: '30X',
     description: {
-      spell: '将战场变为蔓生之地（每当敌方召唤一个造物或敌方造物属性值发生变化，该造物X回合无法攻击）。',
+      spell: '将战场变为蔓生之地（每当敌方召唤一个造物或敌方造物属性值发生变化，该造物 X 回合无法攻击）。',
       creature: '将战场变为蔓生之地。',
     },
     artId: 'card-art-4',
@@ -801,18 +802,18 @@ export const initialTerms: Term[] = [
   {
     id: 'water-purify',
     name: '净化X',
-    type: '特殊',
+    type: '基础',
     cost: '6X',
     description: {
       spell: '移除目标身上的2X个buff。',
-      creature: '回合结束将X个造物移回拥有者手牌。',
+      creature: '回合结束将 X 个造物移回拥有者手牌。',
     },
     artId: 'card-art-4',
   },
   {
     id: 'water-dampen',
     name: '潮湿X',
-    type: '特殊',
+    type: '基础',
     cost: '8X',
     description: {
       spell: '目标在本局造成的伤害永久减少2X。',
@@ -823,7 +824,7 @@ export const initialTerms: Term[] = [
   {
     id: 'water-tide',
     name: '潮汐X',
-    type: '特殊',
+    type: '基础',
     cost: '25X',
     description: {
       spell: '将战场变为无尽潮汐（每回合开始时，生命值小于或等于X的所有造物被移出游戏）。',
@@ -847,7 +848,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fire-ignite',
     name: '引燃X',
-    type: '特殊',
+    type: '基础',
     cost: '12X',
     description: {
       spell: '选择一个目标，立即触发其身上全部的X次减益效果（debuff）。',
@@ -858,7 +859,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fire-scorch',
     name: '炽热2X',
-    type: '特殊',
+    type: '基础',
     cost: '3X', 
     description: {
       spell: '给予目标X层炽热（每层在回合结束时造成1点伤害）。',
@@ -869,7 +870,7 @@ export const initialTerms: Term[] = [
   {
     id: 'fire-scorched-earth',
     name: '焦土X',
-    type: '特殊',
+    type: '基础',
     cost: '40X',
     description: {
       spell: '将战场变为燃烧焦土（所有敌方单位在回合结束时失去10X%点当前生命值，上限为9）。',
@@ -904,7 +905,7 @@ export const initialTerms: Term[] = [
   {
     id: 'dust-blind',
     name: '蒙蔽',
-    type: '特殊',
+    type: '基础',
     cost: 30,
     description: {
       spell: '目标下一张打出的法术，将无法触发其基础词条效果。',
@@ -915,7 +916,7 @@ export const initialTerms: Term[] = [
   {
     id: 'dust-petrify',
     name: '沙化X',
-    type: '特殊',
+    type: '基础',
     cost: '8X',
     description: {
       spell: '目标造物的生命值变为8-X。',
@@ -926,7 +927,7 @@ export const initialTerms: Term[] = [
   {
     id: 'dust-desert',
     name: '尘埃X',
-    type: '特殊',
+    type: '基础',
     cost: '10X',
     description: {
       spell: '将战场变为尘埃沙漠（敌方造物获得属性加成时-X/-X）。',
@@ -961,7 +962,7 @@ export const initialTerms: Term[] = [
   {
     id: 'blood-plague',
     name: '血疫X',
-    type: '特殊',
+    type: '基础',
     cost: '22X',
     description: {
       spell: '给予目标X层血疫（目标每次将要恢复生命时，改为受到等量伤害，并消耗一层血疫）。',
@@ -972,7 +973,7 @@ export const initialTerms: Term[] = [
   {
     id: 'blood-rebirth',
     name: '回生X',
-    type: '特殊',
+    type: '基础',
     cost: '20X',
     description: {
       spell: 'X回合内，施法者获得除自身外所有单位失去生命值的总和。',
@@ -983,7 +984,7 @@ export const initialTerms: Term[] = [
   {
     id: 'blood-reversal',
     name: '逆命X',
-    type: '特殊',
+    type: '基础',
     cost: '15X',
     description: {
       spell: '选择一个目标，赋予X层逆命（死亡时移除所有逆命层数，并以等同于移除层数的生命值复活）。',
@@ -992,3 +993,5 @@ export const initialTerms: Term[] = [
     artId: 'card-art-3',
   },
 ];
+
+    
