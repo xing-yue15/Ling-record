@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'LexicArcana',
+  title: '灵记',
   description: '一款关于文字与策略的卡牌游戏。',
 };
 

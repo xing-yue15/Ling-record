@@ -9,7 +9,7 @@ export function Header() {
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Swords className="h-6 w-6 text-primary" />
           <span className="font-bold font-headline sm:inline-block">
-            LexicArcana
+            灵记
           </span>
         </Link>
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
@@ -27,8 +27,12 @@ export function Header() {
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
-            <Button variant="ghost">登录</Button>
-            <Button>注册</Button>
+          <Button asChild variant="ghost">
+            <Link href="/login">登录</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/signup">注册</Link>
+          </Button>
         </div>
       </div>
     </header>
