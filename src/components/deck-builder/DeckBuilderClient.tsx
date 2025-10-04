@@ -77,7 +77,7 @@ const createCardFromTerms = (terms: Term[], name: string, type: CardType): Card 
 
 export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   const [craftingTerms, setCraftingTerms] = useState<Term[]>([]);
-  const [cardName, setCardName] = useState('New Card');
+  const [cardName, setCardName] = useState('新卡牌');
   const [cardType, setCardType] = useState<CardType>('法术牌');
   const [deck, setDeck] = useState<Card[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -95,12 +95,12 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
   
   const clearCrafting = () => {
     setCraftingTerms([]);
-    setCardName("New Card");
+    setCardName("新卡牌");
   }
 
   const handleGenerateName = async () => {
     if (craftingTerms.length === 0) {
-      toast({ title: "Cannot generate name", description: "Add some terms to the crafting area first.", variant: 'destructive' });
+      toast({ title: "无法生成名称", description: "请先将一些词条添加到制作区。", variant: 'destructive' });
       return;
     }
     setIsGenerating(true);
@@ -109,7 +109,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       setCardName(result.cardName);
     } catch (error) {
       console.error('AI name generation failed:', error);
-      toast({ title: "AI Error", description: "Failed to generate a name. Please try again.", variant: 'destructive' });
+      toast({ title: "AI 错误", description: "生成名称失败。请重试。", variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -119,7 +119,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
     if (previewCard) {
       setDeck(prev => [...prev, previewCard]);
       clearCrafting();
-      toast({ title: 'Card Added!', description: `"${previewCard.name}" has been added to your deck.` });
+      toast({ title: '卡牌已添加!', description: `"${previewCard.name}" 已添加到您的牌组。` });
     }
   };
 
@@ -128,7 +128,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       {/* Terms List */}
       <UICard>
         <CardHeader>
-          <CardTitle className="font-headline">Available Terms</CardTitle>
+          <CardTitle className="font-headline">可用词条</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[60vh]">
@@ -139,7 +139,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                     <h3 className="font-bold">{term.name}</h3>
                     <p className="text-xs text-muted-foreground">{term.description.spell}</p>
                   </div>
-                  <Button size="sm" onClick={() => addTermToCrafting(term)}>Add</Button>
+                  <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
                 </div>
               ))}
             </div>
@@ -151,11 +151,11 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       <div className="space-y-8">
         <UICard>
           <CardHeader>
-            <CardTitle className="font-headline">Crafting Area</CardTitle>
+            <CardTitle className="font-headline">制作区</CardTitle>
           </CardHeader>
           <CardContent className="min-h-48">
             {craftingTerms.length === 0 ? (
-                <p className="text-muted-foreground text-center py-10">Add terms to start crafting.</p>
+                <p className="text-muted-foreground text-center py-10">添加词条以开始制作。</p>
             ) : (
                 <div className="flex flex-wrap gap-2">
                 {craftingTerms.map((term, index) => (
@@ -168,7 +168,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                 ))}
                 </div>
             )}
-             {craftingTerms.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="mt-4">Clear</Button>}
+             {craftingTerms.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="mt-4">清空</Button>}
           </CardContent>
         </UICard>
         
@@ -180,17 +180,17 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
           <UICard>
             <CardContent className="pt-6 space-y-4">
                <div className="flex gap-2">
-                    <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="Enter Card Name" />
+                    <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
                     <Button onClick={handleGenerateName} disabled={isGenerating}>
                         {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                        <span className="ml-2">AI Name</span>
+                        <span className="ml-2">AI取名</span>
                     </Button>
                </div>
               <div className="flex gap-2">
-                <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">Spell</Button>
-                <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">Creature</Button>
+                <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
+                <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
               </div>
-              <Button size="lg" className="w-full" onClick={addCardToDeck}>Add to Deck</Button>
+              <Button size="lg" className="w-full" onClick={addCardToDeck}>添加到牌组</Button>
             </CardContent>
           </UICard>
         )}
@@ -199,7 +199,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
       {/* Deck List */}
       <UICard>
         <CardHeader>
-          <CardTitle className="font-headline">Current Deck ({deck.length}/30)</CardTitle>
+          <CardTitle className="font-headline">当前牌组 ({deck.length}/30)</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[60vh]">
@@ -210,7 +210,7 @@ export function DeckBuilderClient({ ownedTerms }: DeckBuilderClientProps) {
                   <Badge variant="outline">{card.finalCost}</Badge>
                 </div>
               ))}
-              {deck.length === 0 && <p className="text-muted-foreground text-center py-10">Your deck is empty.</p>}
+              {deck.length === 0 && <p className="text-muted-foreground text-center py-10">你的牌组是空的。</p>}
             </div>
           </ScrollArea>
         </CardContent>

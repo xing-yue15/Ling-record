@@ -17,18 +17,18 @@ export function Header() {
             href="/deck-builder"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
-            Deck Builder
+            牌组构筑
           </Link>
           <Link
             href="/adventure"
             className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
-            Adventure
+            冒险
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
-            <Button variant="ghost">Login</Button>
-            <Button>Sign Up</Button>
+            <Button variant="ghost">登录</Button>
+            <Button>注册</Button>
         </div>
       </div>
     </header>

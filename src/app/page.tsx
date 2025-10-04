@@ -14,14 +14,14 @@ export default function Home() {
             LexicArcana
           </h1>
           <p className="mt-6 text-lg leading-8 text-foreground/80">
-            Forge your destiny with words. A card game of creation, strategy, and synchronous combat.
+            用言语铸就你的命运。一款关于创造、策略和同步战斗的卡牌游戏。
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Button asChild size="lg">
-              <Link href="/adventure">Start Adventure</Link>
+              <Link href="/adventure">开始冒险</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/deck-builder">Build your Deck</Link>
+              <Link href="/deck-builder">构筑牌组</Link>
             </Button>
           </div>
         </div>

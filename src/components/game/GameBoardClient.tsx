@@ -20,7 +20,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
 
       {/* Center/Environment Area */}
       <div className="h-16 flex items-center justify-center border-b-2 border-dashed border-border">
-        <p className="text-muted-foreground font-headline">Environment: Neutral Ground</p>
+        <p className="text-muted-foreground font-headline">环境：中立地带</p>
       </div>
 
       {/* Player's Area */}

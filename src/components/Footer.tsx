@@ -8,7 +8,7 @@ export function Footer() {
           <Swords className="h-4 w-4 text-primary" />
           <p className="font-bold font-headline">LexicArcana</p>
         </div>
-        <p>&copy; {new Date().getFullYear()} LexicArcana. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} LexicArcana. 版权所有。</p>
       </div>
     </footer>
   );

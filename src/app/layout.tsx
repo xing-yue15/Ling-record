@@ -6,7 +6,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'LexicArcana',
-  description: 'A card game of words and strategy.',
+  description: '一款关于文字与策略的卡牌游戏。',
 };
 
 export default function RootLayout({

@@ -12,11 +12,11 @@ interface PlayerAreaProps {
 
 const placeholderCard: CardData = {
     id: "placeholder",
-    name: "Ancient Tome",
+    name: "古籍",
     terms: [initialTerms[0]],
     finalCost: 3,
     type: "法术牌",
-    description: "A placeholder card from a forgotten era.",
+    description: "一张来自被遗忘时代的占位卡。",
     artId: 'card-art-1'
 };
 
@@ -79,7 +79,7 @@ export function PlayerArea({ isOpponent }: PlayerAreaProps) {
         <div className="flex flex-col gap-4">
             <Card className="w-24 h-36 flex flex-col items-center justify-center p-2 bg-card/80">
                 <Swords className="w-8 h-8 text-primary"/>
-                <p className="font-bold mt-1">Deck</p>
+                <p className="font-bold mt-1">牌库</p>
                 <p className="text-xl font-bold">24</p>
             </Card>
         </div>
