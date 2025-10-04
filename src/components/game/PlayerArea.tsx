@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart } from 'lucide-react';
 import { GameCard } from './Card';
 import type { Player } from '@/lib/definitions';
-import { ManaIcon } from '@/components/icons/GameIcons';
 
 interface PlayerAreaProps {
   player: Player;
@@ -27,10 +26,6 @@ export function PlayerArea({ player, isOpponent, onBoardClick, isPlacing = false
             <Card className="p-2 flex items-center gap-2 bg-card/60 w-full justify-center">
                 <Heart className="w-5 h-5 text-red-500"/>
                 <span className="font-bold text-xl">{player.health}</span>
-            </Card>
-             <Card className="p-2 flex items-center gap-2 bg-card/60 w-full justify-center">
-                <ManaIcon className="w-5 h-5 text-blue-400"/>
-                <span className="font-bold text-xl">{player.currentMana}/{player.manaCap}</span>
             </Card>
         </div>
 

@@ -9,8 +9,8 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
       {
         id: 'player',
         name: '玩家',
-        health: 30,
-        maxHealth: 30,
+        health: 100,
+        maxHealth: 100,
         deck: Array(24).fill({ id: 'card-1', name: '测试卡', terms: [initialTerms[0]], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' }),
         hand: [
           { id: 'card-hand-1', name: '火焰冲击', terms: [initialTerms[0]], finalCost: 2, type: '法术牌', description: '造成4点伤害。', artId: 'card-art-1' },
@@ -21,20 +21,16 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
         ],
         graveyard: [],
         board: [null, { id: 'creature-1', cardId: 'c1', name: '石拳食人魔', attack: 4, health: 5, maxHealth: 5, artId: 'creature-ogre', canAttack: true }, null, { id: 'creature-2', cardId: 'c2', name: '精灵斥候', attack: 1, health: 1, maxHealth: 1, artId: 'creature-elf', canAttack: true }, null, null],
-        manaCap: 3,
-        currentMana: 3,
       },
       {
         id: 'opponent',
         name: '哥布林工匠',
-        health: 30,
-        maxHealth: 30,
+        health: 100,
+        maxHealth: 100,
         deck: Array(25).fill({ id: 'card-1', name: '测试卡', terms: [initialTerms[0]], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' }),
-        hand: Array(5).fill(null).map((_, i) => ({ id: `card-ob-${i}`, name: '对手卡', terms: [], finalCost: 0, type: '法术牌', description: '', artId: ''})),
+        hand: Array(5).fill(null).map((_, i) => ({ id: `card-ob-${i}`, name: '对手卡', terms: [], finalCost: i + 1, type: '法术牌', description: '', artId: ''})),
         graveyard: [],
         board: [null, { id: 'creature-3', cardId: 'c3', name: '爆炸稻草人', attack: 1, health: 3, maxHealth: 3, artId: 'creature-scarecrow', canAttack: true }, null, { id: 'creature-4', cardId: 'c4', name: '机械蜘蛛', attack: 2, health: 1, maxHealth: 1, artId: 'creature-spider', canAttack: true }, null, null],
-        manaCap: 3,
-        currentMana: 3,
       },
     ],
     turnCount: 1,
@@ -44,6 +40,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
     settlementZone: [],
     gamePhase: 'main',
     selectedHandCardIndex: null,
+    turnHasSwappedCard: false,
   }
 
   return (

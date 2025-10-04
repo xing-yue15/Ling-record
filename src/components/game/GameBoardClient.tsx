@@ -5,7 +5,7 @@ import { produce } from 'immer';
 import { PlayerArea } from './PlayerArea';
 import { Button } from '@/components/ui/button';
 import { GameCard } from './Card';
-import { Swords, Library } from 'lucide-react';
+import { Library, Recycle } from 'lucide-react';
 import type { GameState, Card as CardData, Creature } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -23,14 +23,21 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   const opponentPlayer = gameState.players[1 - gameState.activePlayerIndex];
   const isPlayerTurn = gameState.activePlayerIndex === 0;
 
+  // Placeholder for card cost check (will be more complex)
+  const canPlayCard = (card: CardData): boolean => {
+    // This will be replaced with logic for "燃血" (health cost), "舍弃" (discard cost), etc.
+    // For now, all cards can be played.
+    return true;
+  };
+
   const handleCardPlay = (cardIndex: number) => {
     if (!isPlayerTurn || gameState.gamePhase === 'placement') return;
 
     const card = activePlayer.hand[cardIndex];
-    if (card.finalCost > activePlayer.currentMana) {
+    if (!canPlayCard(card)) {
       toast({
-        title: '法力不足',
-        description: `你需要 ${card.finalCost} 法力, 但只有 ${activePlayer.currentMana}。`,
+        title: '无法出牌',
+        description: `不满足此牌的打出条件。`,
         variant: 'destructive',
       });
       return;
@@ -38,7 +45,6 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
     
     setGameState(produce(draft => {
       const player = draft.players[draft.activePlayerIndex];
-      player.currentMana -= card.finalCost;
       
       if (card.type === '造物牌') {
         draft.selectedHandCardIndex = cardIndex;
@@ -84,70 +90,66 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
   };
 
   const endTurn = () => {
+    // This is where both players' chosen cards would be revealed and resolved.
+    // For now, we will simulate a simple turn end.
     if (!isPlayerTurn) return;
 
     setGameState(produce(draft => {
-      // 1. Combat Phase
+        
+      // Clear settlement zone (cards would be resolved here)
+      draft.settlementZone = [];
+
+      // 1. **Creature Combat Phase**
       const attacker = draft.players[draft.activePlayerIndex];
       const defender = draft.players[1 - draft.activePlayerIndex];
 
       attacker.board.forEach((creature, i) => {
         if (creature && creature.canAttack) {
-          const opposingCreature = defender.board[i];
-          if (opposingCreature) {
-            // Creature vs Creature
-            opposingCreature.health -= creature.attack;
-            creature.health -= opposingCreature.attack;
-          } else {
-            // Creature vs Player
-            defender.health -= creature.attack;
-          }
+          // In the future, creatures will attack the player if no opposing creature.
+          // For now, let's simplify and just have them attack the player.
+          defender.health -= creature.attack;
         }
       });
       
-      // Remove dead creatures
-      attacker.board.forEach((creature, i) => {
-        if (creature && creature.health <= 0) {
-            attacker.graveyard.push(creature as unknown as CardData);
-            attacker.board[i] = null;
-        }
-      });
-      defender.board.forEach((creature, i) => {
-        if (creature && creature.health <= 0) {
-            defender.graveyard.push(creature as unknown as CardData);
-            defender.board[i] = null;
-        }
-      });
-
-
-      // 2. Switch Active Player
-      draft.activePlayerIndex = 1 - draft.activePlayerIndex;
-      const newActivePlayer = draft.players[draft.activePlayerIndex];
+      // Remove dead creatures (simplified, no combat damage between creatures yet)
       
-      // 3. Start of new turn
-      draft.turnCount = draft.activePlayerIndex === 0 ? draft.turnCount + 1 : draft.turnCount;
-      newActivePlayer.manaCap = Math.min(10, newActivePlayer.manaCap + 1);
-      newActivePlayer.currentMana = newActivePlayer.manaCap;
-      
-      // Wake up creatures
-      newActivePlayer.board.forEach(c => {
-        if(c) c.canAttack = true;
-      });
-
-      // Draw a card
-      if (newActivePlayer.deck.length > 0) {
-        const drawnCard = newActivePlayer.deck.pop()!;
-        newActivePlayer.hand.push(drawnCard);
-      } else {
-        // Fatigue damage
-        newActivePlayer.health -= 1; 
+      // Check for player death
+      if (defender.health <= 0) {
+          draft.gamePhase = 'end';
+          // Handle game over logic
+          return;
       }
+      
+      // 2. **Switch Active Player**
+      // In a simultaneous system, this might work differently, but for now we'll toggle.
+      // This part of the logic will need significant rework for simultaneous turns.
+      
+      // 3. **Start of New Turn**
+      draft.turnCount += 1;
+      
+      // Both players get their turn-based actions reset
+      draft.turnHasSwappedCard = false;
+
+      // Wake up all creatures on the board for the next turn's combat
+      draft.players.forEach(p => {
+        p.board.forEach(c => {
+          if(c) c.canAttack = true;
+        });
+      })
+      
+      // Fatigue damage if deck is empty
+      draft.players.forEach(p => {
+          if (p.deck.length === 0) {
+              p.health -= Math.ceil(p.maxHealth * 0.2);
+          }
+      });
+
     }));
   };
 
 
   return (
-    <div className="w-full h-screen flex flex-col bg-transparent text-white p-2">
+    <div className="w-full h-screen flex flex-col bg-transparent text-white p-2 overflow-hidden">
       {/* Opponent's Area */}
       <div className="flex-1">
         <PlayerArea player={opponentPlayer} isOpponent={true} />
@@ -165,7 +167,7 @@ export function GameBoardClient({ matchId, initialState }: GameBoardClientProps)
                  {gameState.settlementZone.length === 0 ? (
                     <p className="text-muted-foreground">结算区</p>
                  ) : (
-                    gameState.settlementZone.map(({card}, index) => <div className="w-24 h-full"><GameCard key={index} card={card} /></div>)
+                    gameState.settlementZone.map(({card}, index) => <div key={index} className="w-24 h-full"><GameCard card={card} /></div>)
                  )}
             </div>
         </div>

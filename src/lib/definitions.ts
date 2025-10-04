@@ -46,8 +46,6 @@ export interface Player {
   hand: Card[];
   graveyard: Card[];
   board: (Creature | null)[];
-  manaCap: number;
-  currentMana: number;
 }
 
 export interface GameState {
@@ -59,4 +57,5 @@ export interface GameState {
   settlementZone: {card: Card, playerId: string}[];
   gamePhase: 'main' | 'combat' | 'end' | 'placement';
   selectedHandCardIndex: number | null;
+  turnHasSwappedCard: boolean; // Each player has one chance to swap/select card per turn
 }
