@@ -11,6 +11,7 @@ export function Header() {
   const pathname = usePathname();
   const inGame = pathname.startsWith('/battle') || pathname.startsWith('/adventure') || pathname.startsWith('/worlds') || pathname.startsWith('/deck-selection') || pathname.startsWith('/deck-builder');
   const isHomePage = pathname === '/';
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   if (inGame) {
     return null;
@@ -30,25 +31,26 @@ export function Header() {
             灵记
           </span>
         </Link>
-        {!isHomePage && (
-          <>
-            <nav className="flex items-center gap-4 text-sm lg:gap-6">
-              <Button asChild variant="link" className={navLinkClasses("/deck-builder")}>
-                <Link
-                  href="/deck-builder"
-                >
-                  牌组构筑
-                </Link>
-              </Button>
-              <Button asChild variant="link" className={navLinkClasses("/worlds")}>
-                <Link
-                  href="/worlds"
-                >
-                  冒险
-                </Link>
-              </Button>
-            </nav>
-            <div className="flex flex-1 items-center justify-end gap-2">
+        
+        <nav className="flex items-center gap-4 text-sm lg:gap-6 flex-1">
+          <Button asChild variant="link" className={navLinkClasses("/worlds")}>
+            <Link
+              href="/worlds"
+            >
+              开始冒险
+            </Link>
+          </Button>
+          <Button asChild variant="link" className={navLinkClasses("/deck-builder")}>
+            <Link
+              href="/deck-builder"
+            >
+              卡牌构筑
+            </Link>
+          </Button>
+        </nav>
+
+        {!isAuthPage && (
+            <div className="flex items-center justify-end gap-2">
               <Button asChild variant="ghost">
                 <Link href="/login">登录</Link>
               </Button>
@@ -56,18 +58,7 @@ export function Header() {
                 <Link href="/signup">注册</Link>
               </Button>
             </div>
-          </>
         )}
-         {isHomePage && (
-            <div className="flex-1 items-center justify-end flex gap-2">
-               <Button asChild variant="ghost">
-                <Link href="/login">登录</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/signup">注册</Link>
-              </Button>
-            </div>
-         )}
       </div>
     </header>
   );
