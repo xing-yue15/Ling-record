@@ -33,10 +33,11 @@ export interface Creature {
   health: number;
   maxHealth: number;
   type: '造物牌'; // To distinguish it on the board
+  artId: string;
 }
 
 export interface Player {
-  id: string;
+  id:string;
   name: string;
   health: number;
   maxHealth: number;
@@ -54,4 +55,5 @@ export interface GameState {
   pvpScore: [number, number];
   currentEnvironment: string | null;
   activePlayerIndex: 0 | 1;
+  settlementZone: Card[];
 }

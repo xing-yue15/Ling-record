@@ -1,6 +1,16 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
 import { Swords } from 'lucide-react';
 
 export function Footer() {
+  const pathname = usePathname();
+  const inBattle = pathname.startsWith('/battle');
+
+  if (inBattle) {
+    return null;
+  }
+  
   return (
     <footer className="border-t border-border/40">
       <div className="container flex h-14 items-center justify-between text-sm text-foreground/60">

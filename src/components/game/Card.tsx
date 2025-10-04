@@ -9,10 +9,10 @@ import { HeartIcon, SwordIcon, ManaIcon } from '@/components/icons/GameIcons';
 interface CardProps {
   card: CardData | Creature;
   className?: string;
-  inHand?: boolean; // Add a prop to indicate if the card is in the player's hand
+  inHand?: boolean; 
 }
 
-function CardContentLayout({ card, isCreatureInstance, cardData, cardImage }: { card: CardData | Creature, isCreatureInstance: boolean, cardData: CardData, cardImage: any }) {
+function CardContentLayout({ card, isCreatureInstance, cardData }: { card: CardData | Creature, isCreatureInstance: boolean, cardData: CardData }) {
   return (
     <Card className={cn(
       "w-full h-full flex flex-col transition-transform duration-300 ease-in-out hover:shadow-primary/50 shadow-lg bg-card/80 backdrop-blur-sm",
@@ -27,23 +27,11 @@ function CardContentLayout({ card, isCreatureInstance, cardData, cardImage }: { 
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-0 flex-grow relative">
-        {cardImage && (
-          <Image
-            src={cardImage.imageUrl}
-            alt={card.name}
-            width={isCreatureInstance ? 100 : 400}
-            height={isCreatureInstance ? 80 : 300}
-            className={cn("w-full object-cover", isCreatureInstance ? "h-16" : "h-32")}
-            data-ai-hint={cardImage.imageHint}
-          />
-        )}
-        <div className={cn(
-          "absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent",
-          isCreatureInstance ? "text-[10px] h-10" : "text-xs h-16"
-        )}>
-          {/* Description is now in the tooltip for hand cards */}
-        </div>
+      <CardContent className="p-2 flex-grow relative flex items-center justify-center text-center">
+        <p className={cn(isCreatureInstance ? 'text-[10px]' : 'text-xs', 'text-muted-foreground')}>
+          {/* Description is now in the tooltip for hand cards, only show for non-hand cards */}
+          {cardData.description}
+        </p>
       </CardContent>
       <CardFooter className="p-2 flex justify-between items-center border-t mt-auto">
         {!isCreatureInstance && <span className="font-bold text-sm text-secondary-foreground">{cardData.type}</span>}
@@ -67,10 +55,7 @@ function CardContentLayout({ card, isCreatureInstance, cardData, cardImage }: { 
 
 export function GameCard({ card, className, inHand = false }: CardProps) {
   const isCreatureInstance = 'maxHealth' in card;
-  const cardData = card as CardData;
-
-  const artId = isCreatureInstance ? (card as Creature).cardId : cardData.artId;
-  const cardImage = PlaceHolderImages.find(p => p.id === artId) ?? PlaceHolderImages.find(p => p.id === 'card-art-1');
+  const cardData = isCreatureInstance ? { ...card, finalCost: 0, description: '', terms: [] } as CardData : card as CardData;
 
   const cardElement = (
      <div className={cn("w-full h-full", className)}>
@@ -78,7 +63,6 @@ export function GameCard({ card, className, inHand = false }: CardProps) {
           card={card}
           isCreatureInstance={isCreatureInstance}
           cardData={cardData}
-          cardImage={cardImage}
         />
      </div>
   )

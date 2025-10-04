@@ -19,7 +19,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
           { id: 'card-hand-5', name: '延迟火球', terms: [initialTerms[0], initialTerms[6]], finalCost: 1, type: '法术牌', description: '造成8点伤害。此效果将在2回合后生效。', artId: 'card-art-6' },
         ],
         graveyard: [],
-        board: [null, { id: 'creature-1', cardId: 'c1', name: '石拳食人魔', attack: 4, health: 5, maxHealth: 5 }, null, { id: 'creature-2', cardId: 'c2', name: '精灵斥候', attack: 1, health: 1, maxHealth: 1 }, null, null],
+        board: [null, { id: 'creature-1', cardId: 'c1', name: '石拳食人魔', attack: 4, health: 5, maxHealth: 5, artId: 'creature-ogre' }, null, { id: 'creature-2', cardId: 'c2', name: '精灵斥候', attack: 1, health: 1, maxHealth: 1, artId: 'creature-elf' }, null, null],
         manaCap: 3,
         currentMana: 3,
       },
@@ -31,7 +31,7 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
         deck: Array(25).fill({ id: 'card-1', name: '测试卡', terms: [initialTerms[0]], finalCost: 2, type: '法术牌', description: '一张测试卡', artId: 'card-art-1' }),
         hand: Array(5).fill({ id: 'card-ob', name: '对手卡', terms: [], finalCost: 0, type: '法术牌', description: '', artId: ''}),
         graveyard: [],
-        board: [null, { id: 'creature-3', cardId: 'c3', name: '爆炸稻草人', attack: 1, health: 3, maxHealth: 3 }, null, { id: 'creature-4', cardId: 'c4', name: '机械蜘蛛', attack: 2, health: 1, maxHealth: 1 }, null, null],
+        board: [null, { id: 'creature-3', cardId: 'c3', name: '爆炸稻草人', attack: 1, health: 3, maxHealth: 3, artId: 'creature-scarecrow' }, null, { id: 'creature-4', cardId: 'c4', name: '机械蜘蛛', attack: 2, health: 1, maxHealth: 1, artId: 'creature-spider' }, null, null],
         manaCap: 3,
         currentMana: 3,
       },
@@ -40,11 +40,13 @@ export default function BattlePage({ params }: { params: { matchId: string } }) 
     pvpScore: [0, 0],
     currentEnvironment: null,
     activePlayerIndex: 0,
+    settlementZone: [],
   }
 
   return (
-    <div className="w-full h-[calc(100vh-4rem)] overflow-hidden relative">
-      <GameBoardClient matchId={params.matchId} initialState={initialGameState} />
+    <div className="w-full h-screen overflow-hidden relative bg-transparent">
+        <div className="absolute inset-0 -z-20 h-full w-full bg-neutral-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+        <GameBoardClient matchId={params.matchId} initialState={initialGameState} />
     </div>
   );
 }

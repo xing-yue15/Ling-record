@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Scroll, Swords } from 'lucide-react';
+import { Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -11,9 +11,12 @@ export function Header() {
   const pathname = usePathname();
   const inBattle = pathname.startsWith('/battle');
 
+  if (inBattle) {
+    return null;
+  }
+
   const navLinkClasses = (href: string) => cn(
-    "transition-colors hover:text-foreground/80 text-foreground/60",
-    inBattle && "pointer-events-none opacity-50"
+    "transition-colors hover:text-foreground/80 text-foreground/60"
   );
 
   return (
