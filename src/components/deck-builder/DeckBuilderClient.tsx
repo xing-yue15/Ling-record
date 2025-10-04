@@ -83,15 +83,11 @@ const processTerms = (
       if (term.cost.includes('X')) {
         const costVal = parseInt(term.cost.replace('X', ''), 10) || 1;
         currentCost += costVal * count;
-      } else if (term.cost.startsWith('*')) {
-        // Multipliers are handled at the end
-      } else if (term.cost.startsWith('/')) {
-        // Divisors are handled at the end
       }
     }
   });
   
-  return { description: descs.join(' '), attack: currentAttack, health: currentHealth, cost: currentCost, multistrike: currentMultistrike };
+  return { description: descs.join('，'), attack: currentAttack, health: currentHealth, cost: currentCost, multistrike: currentMultistrike };
 };
 
 
@@ -122,7 +118,10 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     
     const childResult = processTerms(group.children, type);
     
-    const finalLimiterDesc = limiterDescTemplate.replace('??', childResult.description);
+    const finalLimiterDesc = limiterDescTemplate
+      .replace('??', childResult.description)
+      .replace(limiter.name, '')
+      .trim();
     descriptionParts.push(finalLimiterDesc);
 
     // Limiter Cost Modifiers
@@ -157,7 +156,7 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     terms,
     finalCost,
     type,
-    description: descriptionParts.join(' ').trim(),
+    description: descriptionParts.join('，').trim(),
     attack,
     health,
     artId: 'card-art-1',
@@ -179,10 +178,11 @@ const CraftingAreaContent = ({
     terms.forEach((item, index) => {
       const isGroup = 'limiter' in item;
       const term = isGroup ? (item as LimiterGroup).limiter : (item as Term);
-      const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike';
+      const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike' || term.name.includes('X');
       const key = term.id;
       
       if (isGroup || !isNumeric) {
+         // Use a unique key for non-numeric and group items to prevent grouping
         termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
       } else {
         if (!termMap[key]) {
@@ -232,7 +232,7 @@ const CraftingAreaContent = ({
         }
         
         const term = item as Term;
-        const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike';
+        const isNumeric = String(term.cost).includes('X') || term.id === 'multistrike' || term.name.includes('X');
         return (
           <div key={term.id + originalIndex} className="relative inline-block">
             <Badge variant="secondary" className="text-lg p-3 pr-8">
@@ -322,7 +322,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       return;
     }
     
-    const isNumericTerm = String(term.cost).includes('X') || term.id === 'multistrike';
+    const isNumericTerm = String(term.cost).includes('X') || term.id === 'multistrike' || term.name.includes('X');
     
     if (!isNumericTerm) {
       const currentArea = craftingMode === 'main' ? mainTerms : limiterTerms;
@@ -361,7 +361,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     const termToRemove = area.find((t, i) => !('limiter' in t) && t.id === termId);
     if (!termToRemove) return;
 
-    const isNumeric = String((termToRemove as Term).cost).includes('X') || termToRemove.id === 'multistrike';
+    const isNumeric = String((termToRemove as Term).cost).includes('X') || termToRemove.id === 'multistrike' || (termToRemove as Term).name.includes('X');
     if (isNumeric) {
       let lastIndex = -1;
       for (let i = area.length - 1; i >= 0; i--) {

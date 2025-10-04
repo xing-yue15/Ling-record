@@ -447,7 +447,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         </div>
         
         {/* Player's Hand */}
-        <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-4xl h-56 flex justify-center items-end gap-2 pb-4">
+        <div className="absolute bottom-[-6rem] left-1/2 -translate-x-1/2 w-full max-w-4xl h-56 flex justify-center items-end gap-0 pb-4">
           {humanPlayer.hand.map((card, i) => (
               <div 
                   key={card.id + i} 
@@ -456,7 +456,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                       gameState.selectedHandCardIndex === i && "border-4 border-primary rounded-lg -translate-y-6 scale-105"
                   )}
                   style={{ 
-                      transform: `translateX(${(i - humanPlayer.hand.length/2) * 15}px) rotate(${(i - humanPlayer.hand.length/2) * 2}deg)`,
+                      transform: `translateX(${(i - (humanPlayer.hand.length - 1) / 2) * 15}px) rotate(${(i - (humanPlayer.hand.length - 1) / 2) * 2}deg)`,
                       transformOrigin: 'bottom center',
                   }}
                   onClick={() => gameState.gamePhase === 'selectingHandCard' ? handleHandCardSwap(i) : handlePlayCard(i)}
