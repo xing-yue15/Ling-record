@@ -2,9 +2,10 @@
 
 import { DeckBuilderClient } from '@/components/deck-builder/DeckBuilderClient';
 import { initialTerms } from '@/lib/initial-data';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-
-function DeckBuilderPageContent() {
+function DeckBuilderPage() {
   // In a real app, you'd fetch the player's owned terms from a database.
   const ownedTerms = initialTerms;
 
@@ -12,16 +13,24 @@ function DeckBuilderPageContent() {
     <div className="container mx-auto py-8 px-4 h-screen flex flex-col">
       <div className="text-center mb-8 flex-shrink-0">
         <h1 className="font-headline text-4xl font-bold text-primary">构筑牌组</h1>
-        <p className="text-foreground/80 mt-2">在这里自由练习并保存你的牌组。</p>
+        <p className="text-foreground/80 mt-2">在这里自由练习并保存你的牌组</p>
       </div>
-      <DeckBuilderClient ownedTerms={ownedTerms} />
+
+      <div className="flex-grow min-h-0">
+        <DeckBuilderClient ownedTerms={ownedTerms} />
+      </div>
+      
+      <div className="flex-shrink-0 pt-8 flex justify-center gap-4">
+        <Button size="lg" variant="outline" asChild>
+            <Link href="/worlds">返回</Link>
+        </Button>
+         <Button size="lg">
+            保存牌组
+        </Button>
+      </div>
     </div>
   );
 }
 
 
-export default function DeckBuilderPage() {
-  return (
-      <DeckBuilderPageContent />
-  );
-}
+export default DeckBuilderPage;

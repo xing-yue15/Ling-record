@@ -317,7 +317,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       if (craftingMode !== 'main') {
           toast({
               title: '无法添加限定词',
-              description: '不能在另一个限定词内部添加限定词。',
+              description: '不能在另一个限定词内部添加限定词',
               variant: 'destructive',
           });
           return;
@@ -326,7 +326,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       if (isAlreadyInMain) {
           toast({
               title: '无法添加限定词',
-              description: '每张卡牌只能有一个相同的限定词。',
+              description: '每张卡牌只能有一个相同的限定词',
               variant: 'destructive',
           });
           return;
@@ -348,7 +348,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       if (isAlreadyInCrafting) {
         toast({
           title: '无法添加词条',
-          description: `“${term.name}”是一个唯一的词条，不能重复添加。`,
+          description: `“${term.name}”是一个唯一的词条，不能重复添加`,
           variant: 'destructive',
         });
         return;
@@ -423,7 +423,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const handleGenerateName = async () => {
     const termsForAI = mainTerms.flatMap(t => ('limiter' in t) ? [t.limiter, ...t.children] : [t]);
     if (termsForAI.length === 0) {
-      toast({ title: "无法生成名称", description: "请先将一些词条添加到制作区。", variant: 'destructive' });
+      toast({ title: "无法生成名称", description: "请先将一些词条添加到制作区", variant: 'destructive' });
       return;
     }
     setIsGenerating(true);
@@ -432,7 +432,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       setCardName(result.cardName);
     } catch (error) {
       console.error('AI name generation failed:', error);
-      toast({ title: "AI 错误", description: "生成名称失败。请重试。", variant: 'destructive' });
+      toast({ title: "AI 错误", description: "生成名称失败。请重试", variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -440,7 +440,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   
   const addCardToDeck = () => {
     if (craftingMode !== 'main') {
-        toast({ title: '请先完成限定词编辑', description: '点击“完成”以完成当前限定词的构筑。', variant: 'destructive' });
+        toast({ title: '请先完成限定词编辑', description: '点击“完成”以完成当前限定词的构筑', variant: 'destructive' });
         return;
     }
 
@@ -451,20 +451,20 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       setMainTerms([]);
       setLimiterTerms([]);
       setCardName("新卡牌");
-      toast({ title: '卡牌已添加!', description: `"${finalPreviewCard.name}" 已添加到您的牌组。` });
+      toast({ title: '卡牌已添加!', description: `"${finalPreviewCard.name}" 已添加到您的牌组` });
     }
   };
 
   const handleSaveDeck = () => {
     if (deck.length === 0) {
-        toast({ title: '无法保存', description: '你的牌组是空的。', variant: 'destructive' });
+        toast({ title: '无法保存', description: '你的牌组是空的', variant: 'destructive' });
         return;
     }
     toast({ title: '牌组已保存！', description: '（此功能为占位符）' });
   }
 
   return (
-    <div className="flex flex-row flex-grow gap-8 min-h-0">
+    <div className="flex h-full flex-row gap-8 min-h-0">
         {/* Left Column: Available Terms */}
         <UICard className="w-1/4 bg-card/50 flex flex-col">
           <CardHeader>
@@ -494,7 +494,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
         {/* Middle Column: Creator / Deck */}
         <div className="w-1/2 h-full flex flex-col">
-          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
+          <Tabs defaultValue="creator" className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
@@ -518,7 +518,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                 <CardContent className="min-h-[12rem]">
                   {termsInCurrentCraftingArea.length === 0 ? (
                       <p className="text-muted-foreground text-center py-10">
-                        {craftingMode === 'main' ? '从左侧添加词条以开始制作。' : `为“${craftingMode.limiter.name}”添加词条。`}
+                        {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
                       </p>
                   ) : (
                     <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
@@ -579,7 +579,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                       ))}
                       {deck.length === 0 && 
                         <div className="col-span-full text-muted-foreground text-center py-10">
-                          <p>你的牌组是空的。</p>
+                          <p>你的牌组是空的</p>
                         </div>
                       }
                     </div>
