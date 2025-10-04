@@ -36,78 +36,63 @@ const createCardFromTerms = (terms: CraftingItem[], name: string, type: CardType
     const limiterGroups = terms.filter(t => 'limiter' in t) as LimiterGroup[];
 
     // --- Process Main Terms ---
-    const mainTermCounts: { [id: string]: number } = {};
-    const uniqueMainTerms: Term[] = [];
+    const processTerms = (termList: Term[], cardType: CardType): { description: string, attack: number, health: number } => {
+        if (termList.length === 0) return { description: '', attack: 0, health: 0 };
 
-    mainTerms.forEach(term => {
-        mainTermCounts[term.id] = (mainTermCounts[term.id] || 0) + 1;
-        if (!uniqueMainTerms.some(t => t.id === term.id)) {
-            uniqueMainTerms.push(term);
-        }
-    });
+        const termCounts: { [id: string]: number } = {};
+        const uniqueTerms: Term[] = [];
+        let currentAttack = 0;
+        let currentHealth = 0;
 
-    uniqueMainTerms.forEach(term => {
-        const count = mainTermCounts[term.id];
-        const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
-        
-        if (descTemplate) {
-            const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
-                const num = numStr ? parseInt(numStr, 10) : 1;
-                return (num * count).toString();
-            });
-             if (finalDesc.trim()) descriptionParts.push(finalDesc);
-        }
-        
-        if (type === '造物牌') {
-             const attackMatch = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
-            if (attackMatch) {
-                const baseAttack = attackMatch[1] ? parseInt(attackMatch[1]) : 1;
-                attack += baseAttack * count;
-            }
-             const healthMatch = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
-             if (healthMatch) {
-                const baseHealth = healthMatch[1] ? parseInt(healthMatch[1]) : 1;
-                health += baseHealth * count;
-            }
-        }
-    });
-
-
-    // --- Process Limiter Groups ---
-    limiterGroups.forEach(group => {
-        const limiter = group.limiter;
-        const children = group.children;
-        let limiterDesc = type === '法术牌' ? limiter.description.spell : limiter.description.creature;
-        
-        const childTermCounts: { [id: string]: number } = {};
-        const uniqueChildTerms: Term[] = [];
-
-        children.forEach(term => {
-            childTermCounts[term.id] = (childTermCounts[term.id] || 0) + 1;
-            if (!uniqueChildTerms.some(t => t.id === term.id)) {
-                uniqueChildTerms.push(term);
+        termList.forEach(term => {
+            termCounts[term.id] = (termCounts[term.id] || 0) + 1;
+            if (!uniqueTerms.some(t => t.id === term.id)) {
+                uniqueTerms.push(term);
             }
         });
 
-        const childEffectDescriptions: string[] = [];
-        uniqueChildTerms.forEach(term => {
-            const count = childTermCounts[term.id];
-            const descTemplate = type === '法术牌' ? term.description.spell : term.description.creature;
-
-             if (descTemplate) {
+        const descs: string[] = [];
+        uniqueTerms.forEach(term => {
+            const count = termCounts[term.id];
+            const descTemplate = cardType === '法术牌' ? term.description.spell : term.description.creature;
+            
+            if (descTemplate) {
                 const finalDesc = descTemplate.replace(/(\d*)[xX]/g, (match, numStr) => {
                     const num = numStr ? parseInt(numStr, 10) : 1;
                     return (num * count).toString();
                 });
-
-                if (finalDesc.trim()) {
-                    childEffectDescriptions.push(finalDesc.trim());
+                if (finalDesc.trim()) descs.push(finalDesc);
+            }
+            
+            if (cardType === '造物牌') {
+                const attackMatch = term.description.creature?.match(/获得(\d*)[xX]点攻击力/);
+                if (attackMatch) {
+                    const baseAttack = attackMatch[1] ? parseInt(attackMatch[1]) : 1;
+                    currentAttack += baseAttack * count;
+                }
+                const healthMatch = term.description.creature?.match(/获得(\d*)[xX]点生命值/);
+                if (healthMatch) {
+                    const baseHealth = healthMatch[1] ? parseInt(healthMatch[1]) : 1;
+                    currentHealth += baseHealth * count;
                 }
             }
         });
+        return { description: descs.join(' ').trim(), attack: currentAttack, health: currentHealth };
+    };
+    
+    const mainResult = processTerms(mainTerms, type);
+    if (mainResult.description) descriptionParts.push(mainResult.description);
+    attack += mainResult.attack;
+    health += mainResult.health;
+
+    // --- Process Limiter Groups ---
+    limiterGroups.forEach(group => {
+        const limiter = group.limiter;
+        let limiterDescTemplate = type === '法术牌' ? limiter.description.spell : limiter.description.creature;
         
-        const combinedChildEffects = childEffectDescriptions.join(' ');
-        const finalLimiterDesc = `[${limiter.name}]: ${limiterDesc.replace('??', combinedChildEffects)}`;
+        const childResult = processTerms(group.children, type);
+        
+        const finalLimiterDesc = `[${limiter.name}]: ${limiterDescTemplate.replace('??', childResult.description)}`;
         descriptionParts.push(finalLimiterDesc);
     });
 
@@ -151,11 +136,12 @@ const CraftingAreaContent = ({
     terms.forEach((item, index) => {
       const isGroup = 'limiter' in item;
       const term = isGroup ? (item as LimiterGroup).limiter : (item as Term);
-      const isNumeric = !isGroup && term.name.includes('X');
+      const isNumeric = term.name.includes('X');
+      const isUnique = !isNumeric || term.type === '限定';
       
       const key = isGroup ? `${term.id}-${index}` : term.id;
 
-      if (!isNumeric || isGroup) {
+      if (isUnique) {
          // Unique key for groups and non-numeric terms to prevent grouping
         termMap[`${key}-${index}`] = { item, count: 1, originalIndices: [index] };
       } else {
@@ -187,11 +173,10 @@ const CraftingAreaContent = ({
                 {group.limiter.name}
               </Badge>
               <div className="flex gap-2 mt-2 pl-2">
-                {group.children.map((child, childIndex) => (
-                  <Badge key={child.id + childIndex} variant="secondary">
-                    {child.name.replace('X','')}
-                  </Badge>
-                ))}
+                <CraftingAreaContent 
+                    terms={group.children}
+                    onRemove={() => {}} // Inner removal not supported from this view
+                />
               </div>
               <button
                 onClick={(e) => {
@@ -212,7 +197,7 @@ const CraftingAreaContent = ({
           <div key={term.id + originalIndex} className="relative inline-block">
             <Badge variant="secondary" className="text-lg p-3 pr-8">
               {term.name.replace('X','')}
-              {isNumeric && count > 0 && <span className="font-bold text-sm ml-1">x{count}</span>}
+              {isNumeric && count > 1 && <span className="font-bold text-sm ml-1">x{count}</span>}
             </Badge>
             <button
               onClick={() => onRemove(term.id, originalIndex, false)}
@@ -334,8 +319,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       return;
     }
     
-    const termToRemove = area[index];
-    if ('limiter' in termToRemove) return; // Should not happen with isGroup false
+    const termToRemove = area.find((t, i) => !('limiter' in t) && t.id === termId);
+    if (!termToRemove) return;
 
     const isNumeric = termToRemove.name.includes('X');
     if (isNumeric) {
@@ -352,8 +337,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         setArea(prev => prev.filter((_, i) => i !== lastIndex));
       }
     } else {
-      // Remove non-numeric term by index
-      setArea(prev => prev.filter((_, i) => i !== index));
+      // Remove non-numeric term by ID
+      setArea(prev => prev.filter(t => !('limiter' in t && t.id === termId)));
     }
   };
 
@@ -592,5 +577,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     </>
   );
 }
+
+    
 
     
