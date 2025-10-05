@@ -24,7 +24,7 @@ function DeckBuilderPage() {
         <Button size="lg" variant="outline" asChild>
             <Link href="/worlds">返回</Link>
         </Button>
-         <Button size="lg">
+         <Button size="lg" disabled title="此功能尚未实现">
             保存牌组
         </Button>
       </div>
