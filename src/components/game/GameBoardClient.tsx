@@ -7,7 +7,7 @@ import { PlayerArea } from './PlayerArea';
 import { Button } from '@/components/ui/button';
 import { GameCard } from './Card';
 import { Library } from 'lucide-react';
-import type { GameState, Card as CardData, Creature, Player } from '@/lib/definitions';
+import type { GameState, Card as CardData, Creature, Player, SettlementAction } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -104,22 +104,19 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
           if (playedCard.type === '造物牌') {
             const emptySlotIndex = draft.players[1].board.findIndex(slot => slot === null);
             if (emptySlotIndex !== -1) {
-              const newCreature: Creature = {
-                id: `creature-${Date.now()}`,
-                cardId: playedCard.id,
-                name: playedCard.name,
-                attack: playedCard.attack ?? 0,
-                health: playedCard.health ?? 1,
-                maxHealth: playedCard.health ?? 1,
-                type: '造物牌',
-                artId: playedCard.artId,
-                canAttack: false,
-              };
-              draft.players[1].board[emptySlotIndex] = newCreature;
+              draft.settlementZone.push({
+                card: playedCard,
+                playerId: 'opponent',
+                action: { type: 'place_creature', playerIndex: 1, slotIndex: emptySlotIndex }
+              });
             }
           } else { // Spell card
             // AI dumbly targets opponent player
-            draft.settlementZone.push({ card: playedCard, playerId: 'opponent', target: {type: 'player', playerIndex: 0} });
+            draft.settlementZone.push({
+              card: playedCard,
+              playerId: 'opponent',
+              action: { type: 'cast_spell', target: {type: 'player', playerIndex: 0} }
+            });
           }
           
           draft.players[1].playedCardThisTurn = true;
@@ -156,7 +153,6 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
 
   const humanPlayer = gameState.players[0];
   const aiPlayer = gameState.players[1];
-  const isPlayerTurn = gameState.activePlayerIndex === 0;
 
   const handlePlayCard = (cardIndex: number) => {
     if (gameState.gamePhase !== 'main' && gameState.gamePhase !== 'selectingTarget') {
@@ -205,20 +201,11 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
       const cardIndex = draft.selectedHandCardIndex!;
       const [card] = player.hand.splice(cardIndex, 1);
 
-      const newCreature: Creature = {
-        id: `creature-${Date.now()}`,
-        cardId: card.id,
-        name: card.name,
-        attack: card.attack ?? 0,
-        health: card.health ?? 1,
-        maxHealth: card.health ?? 1,
-        type: '造物牌',
-        artId: card.artId,
-        canAttack: false, // Summoning sickness
-      };
-
-      player.board[slotIndex] = newCreature;
-      // Creature placement doesn't go to settlement zone, it's immediate
+      draft.settlementZone.push({
+        card,
+        playerId: player.id,
+        action: { type: 'place_creature', playerIndex: 0, slotIndex }
+      });
       
       player.playedCardThisTurn = true;
       draft.gamePhase = 'main';
@@ -235,13 +222,39 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         const cardIndex = draft.selectedHandCardIndex!;
         const [card] = player.hand.splice(cardIndex, 1);
         
-        draft.settlementZone.push({ card, playerId: player.id, target });
+        draft.settlementZone.push({
+            card,
+            playerId: player.id,
+            action: { type: 'cast_spell', target }
+        });
 
         player.playedCardThisTurn = true;
         draft.gamePhase = 'main';
         draft.selectedHandCardIndex = null;
      }));
   }
+
+  const handleCancelAction = (actionIndex: number) => {
+    setGameState(produce(draft => {
+        if (!draft) return;
+        
+        const actionToCancel = draft.settlementZone[actionIndex];
+        if (actionToCancel.playerId !== draft.players[draft.activePlayerIndex].id) {
+            // Cannot cancel opponent's action
+            return;
+        }
+
+        const [canceledAction] = draft.settlementZone.splice(actionIndex, 1);
+        const player = draft.players[draft.activePlayerIndex];
+        
+        // Return card to hand and reset turn state
+        player.hand.push(canceledAction.card);
+        player.playedCardThisTurn = false;
+        
+        draft.gamePhase = 'main';
+        draft.selectedHandCardIndex = null;
+    }));
+  };
 
   const endTurn = () => {
     if (gameState.gamePhase !== 'main') return;
@@ -254,33 +267,51 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
       if (!draft) return;
 
       // --- Resolution Phase ---
-      draft.settlementZone.forEach(action => {
-        // Basic parser for description
-        const damageMatch = action.card.description.match(/造成 (\d+) 点伤害/);
-        const healMatch = action.card.description.match(/恢复 (\d+) 点生命值/);
+      draft.settlementZone.forEach(settlementAction => {
+        const { card, action } = settlementAction;
 
-        if (damageMatch && action.target) {
-            const amount = parseInt(damageMatch[1], 10);
-            const targetPlayer = draft.players[action.target.playerIndex];
-            if (action.target.type === 'player') {
-                targetPlayer.health -= amount;
-            } else if (action.target.type === 'creature' && action.target.slotIndex !== undefined) {
-                const targetCreature = targetPlayer.board[action.target.slotIndex];
-                if (targetCreature) {
-                    targetCreature.health -= amount;
+        if (action.type === 'place_creature') {
+            const player = draft.players[action.playerIndex];
+            const newCreature: Creature = {
+              id: `creature-${Date.now()}`,
+              cardId: card.id,
+              name: card.name,
+              attack: card.attack ?? 0,
+              health: card.health ?? 1,
+              maxHealth: card.health ?? 1,
+              type: '造物牌',
+              artId: card.artId,
+              canAttack: false, // Summoning sickness
+            };
+            player.board[action.slotIndex] = newCreature;
+        } else if (action.type === 'cast_spell') {
+            const { target } = action;
+            const damageMatch = card.description.match(/造成 (\d+) 点伤害/);
+            const healMatch = card.description.match(/恢复 (\d+) 点生命值/);
+
+            if (damageMatch && target) {
+                const amount = parseInt(damageMatch[1], 10);
+                const targetPlayer = draft.players[target.playerIndex];
+                if (target.type === 'player') {
+                    targetPlayer.health -= amount;
+                } else if (target.type === 'creature' && target.slotIndex !== undefined) {
+                    const targetCreature = targetPlayer.board[target.slotIndex];
+                    if (targetCreature) {
+                        targetCreature.health -= amount;
+                    }
                 }
             }
-        }
-        
-        if (healMatch && action.target) {
-             const amount = parseInt(healMatch[1], 10);
-            const targetPlayer = draft.players[action.target.playerIndex];
-            if (action.target.type === 'player') {
-                targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + amount);
-            } else if (action.target.type === 'creature' && action.target.slotIndex !== undefined) {
-                const targetCreature = targetPlayer.board[action.target.slotIndex];
-                if (targetCreature) {
-                    targetCreature.health = Math.min(targetCreature.maxHealth, targetCreature.health + amount);
+            
+            if (healMatch && target) {
+                 const amount = parseInt(healMatch[1], 10);
+                const targetPlayer = draft.players[target.playerIndex];
+                if (target.type === 'player') {
+                    targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + amount);
+                } else if (target.type === 'creature' && target.slotIndex !== undefined) {
+                    const targetCreature = targetPlayer.board[target.slotIndex];
+                    if (targetCreature) {
+                        targetCreature.health = Math.min(targetCreature.maxHealth, targetCreature.health + amount);
+                    }
                 }
             }
         }
@@ -335,6 +366,7 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
         p.turnHasSwappedCard = false;
       })
       
+      draft.activePlayerIndex = (draft.activePlayerIndex === 0 ? 1 : 0) as 0 | 1;
       draft.turnCount += 1;
     }));
   };
@@ -405,7 +437,11 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
           <PlayerArea 
             player={aiPlayer} 
             isOpponent={true} 
-            onBoardClick={slotIndex => handleTargetClick({ type: 'creature', playerIndex: 1, slotIndex })}
+            onBoardClick={slotIndex => {
+                if (gameState.gamePhase === 'selectingTarget') {
+                    handleTargetClick({ type: 'creature', playerIndex: 1, slotIndex });
+                }
+            }}
             onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 1})}
             isTargeting={gameState.gamePhase === 'selectingTarget'}
           />
@@ -423,7 +459,15 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
                   {gameState.settlementZone.length === 0 ? (
                       <p className="text-muted-foreground text-2xl font-headline">结算区</p>
                   ) : (
-                      gameState.settlementZone.map(({card}, index) => <div key={index} className="w-32 h-full"><GameCard card={card} /></div>)
+                      gameState.settlementZone.map((action, index) => (
+                        <div 
+                            key={index} 
+                            className="w-32 h-full cursor-pointer"
+                            onClick={() => handleCancelAction(index)}
+                        >
+                            <GameCard card={action.card} />
+                        </div>
+                      ))
                   )}
               </div>
           </div>

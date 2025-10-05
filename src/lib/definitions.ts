@@ -59,16 +59,28 @@ export type GamePhase =
   | 'combat' // Creatures are fighting
   | 'end'; // Game has ended
 
+export type SettlementAction = {
+    card: Card;
+    playerId: string;
+    action: {
+        type: 'place_creature';
+        playerIndex: number;
+        slotIndex: number;
+    } | {
+        type: 'cast_spell';
+        target: { type: 'player' | 'creature'; playerIndex: number; slotIndex?: number } | null;
+    }
+};
+
 export interface GameState {
   players: [Player, Player];
   turnCount: number;
   pvpScore: [number, number];
   currentEnvironment: string | null;
   activePlayerIndex: 0 | 1;
-  settlementZone: {card: Card, playerId: string, target: {type: 'player' | 'creature', playerIndex: number, slotIndex?: number} | null}[];
+  settlementZone: SettlementAction[];
   gamePhase: GamePhase;
   selectedHandCardIndex: number | null; // index of card in hand selected to be played
   selectedDeckCardIndex: number | null; // index of card in deck selected to be swapped
-  turnHasSwappedCard: boolean; // Each player has one chance to swap/select card per turn
   winner: Player | null;
 }
