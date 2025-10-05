@@ -677,7 +677,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             )}
           </TabsContent>
 
-          <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
+          <TabsContent value="deck" className="flex-grow min-h-0 flex flex-col">
             <UICard className="bg-card/50 h-full flex flex-col">
                <CardHeader>
                   <div className="flex justify-between items-center">
