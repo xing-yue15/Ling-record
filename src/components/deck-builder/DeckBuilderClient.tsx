@@ -469,7 +469,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   return (
     <div className="flex h-full flex-row gap-8">
         <div className="w-1/4 flex flex-col">
-            <Tabs defaultValue="terms" className="w-full flex-grow flex flex-col">
+            <Tabs defaultValue="terms" className="w-full flex flex-col">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="terms">可用词条</TabsTrigger>
                     <TabsTrigger value="creations">我的创作</TabsTrigger>
@@ -553,13 +553,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </div>
 
         <div className={activeMainTab === 'deck' ? "w-3/4 flex flex-col" : "w-1/2 flex flex-col"}>
-          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValueChange={setActiveMainTab}>
+          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValuechange={setActiveMainTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow-0">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow">
               <UICard className="bg-card/50">
                 <CardHeader>
                   <div className="flex items-center gap-2 justify-between">
@@ -574,11 +574,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                     {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
                   </div>
                 </CardHeader>
-                <CardContent className="min-h-[12rem]">
+                <CardContent>
                   {termsInCurrentCraftingArea.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-10">
-                        {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
-                      </p>
+                      <div className="min-h-[12rem] flex items-center justify-center">
+                        <p className="text-muted-foreground text-center">
+                          {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
+                        </p>
+                      </div>
                   ) : (
                     <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
                        <CraftingAreaContent 
