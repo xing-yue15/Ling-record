@@ -27,10 +27,10 @@ interface GameBoardClientProps {
 
 const createInitialDeck = (): CardData[] => {
     // For now, create a simple deck for testing
-    const card1: CardData = { id: 'c1', name: '火球术', terms: [], finalCost: 2, type: '法术牌', description: '造成 5 点伤害。', artId: 'card-art-1' };
-    const card2: CardData = { id: 'c2', name: '哥布林战士', terms: [], finalCost: 1, type: '造物牌', description: '一个基础的战士。', attack: 2, health: 2, artId: 'card-art-2' };
-    const card3: CardData = { id: 'c3', name: '治疗之光', terms: [], finalCost: 3, type: '法术牌', description: '恢复 8 点生命值。', artId: 'card-art-3' };
-    const card4: CardData = { id: 'c4', name: '石巨人', terms: [], finalCost: 5, type: '造物牌', description: '一个巨大的防御者。', attack: 4, health: 8, artId: 'card-art-4' };
+    const card1: CardData = { id: 'c1', name: '火球术', terms: [], finalCost: 2, type: '法术牌', description: '造成 5 点伤害', artId: 'card-art-1' };
+    const card2: CardData = { id: 'c2', name: '哥布林战士', terms: [], finalCost: 1, type: '造物牌', description: '一个基础的战士', attack: 2, health: 2, artId: 'card-art-2' };
+    const card3: CardData = { id: 'c3', name: '治疗之光', terms: [], finalCost: 3, type: '法术牌', description: '恢复 8 点生命值', artId: 'card-art-3' };
+    const card4: CardData = { id: 'c4', name: '石巨人', terms: [], finalCost: 5, type: '造物牌', description: '一个巨大的防御者', attack: 4, health: 8, artId: 'card-art-4' };
     return [card1, card2, card3, card4, { ...card1, id: 'c5' }, { ...card2, id: 'c6' }, { ...card3, id: 'c7' }, { ...card4, id: 'c8' }, { ...card1, id: 'c9' }, { ...card2, id: 'c10' }];
 };
 
@@ -449,7 +449,13 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
           <PlayerArea 
               player={humanPlayer} 
               isOpponent={false} 
-              onBoardClick={handleBoardSlotClick} 
+              onBoardClick={(slotIndex) => {
+                if (gameState.gamePhase === 'selectingTarget') {
+                    handleTargetClick({ type: 'creature', playerIndex: 0, slotIndex });
+                } else if (gameState.gamePhase === 'selectingBoardSlot') {
+                    handleBoardSlotClick(slotIndex);
+                }
+              }} 
               onPlayerClick={() => handleTargetClick({ type: 'player', playerIndex: 0 })}
               isPlacing={gameState.gamePhase === 'selectingBoardSlot'}
               isTargeting={gameState.gamePhase === 'selectingTarget'}
@@ -505,5 +511,3 @@ export function GameBoardClient({ matchId }: GameBoardClientProps) {
     </>
   );
 }
-
-    
