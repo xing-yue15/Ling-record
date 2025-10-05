@@ -553,13 +553,13 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </div>
 
         <div className={activeMainTab === 'deck' ? "w-3/4 flex flex-col" : "w-1/2 flex flex-col"}>
-          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValuechange={setActiveMainTab}>
+          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValueChange={setActiveMainTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow-0">
               <UICard className="bg-card/50">
                 <CardHeader>
                   <div className="flex items-center gap-2 justify-between">
@@ -665,3 +665,5 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       </div>
   );
 }
+
+    
