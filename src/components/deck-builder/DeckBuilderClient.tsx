@@ -287,11 +287,16 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const { toast } = useToast();
 
   const [activeMainTab, setActiveMainTab] = useState('creator');
+  const [leftTabVisible, setLeftTabVisible] = useState(true);
   const [createdCards, setCreatedCards] = useState<Card[]>([]);
   const [savedDecks, setSavedDecks] = useState<{name: string, cards: Card[]}[]>([]);
   
   const craftingAreaRef = useHorizontalScroll();
   const limiterCraftingAreaRef = useHorizontalScroll();
+
+  useEffect(() => {
+      setLeftTabVisible(activeMainTab === 'creator');
+  }, [activeMainTab]);
 
 
   const termsInCurrentCraftingArea = useMemo(() => {
@@ -469,11 +474,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   return (
     <div className="flex h-full flex-row gap-8">
         <div className="w-1/4 flex flex-col">
-            <Tabs defaultValue="terms" className="w-full flex flex-col">
+            <Tabs defaultValue="terms" className="w-full flex flex-col h-full">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="terms">可用词条</TabsTrigger>
-                    <TabsTrigger value="creations">我的创作</TabsTrigger>
-                    <TabsTrigger value="decks">我的卡组</TabsTrigger>
+                    <TabsTrigger value="terms" className={!leftTabVisible ? 'hidden' : ''}>可用词条</TabsTrigger>
+                    <TabsTrigger value="creations" className={leftTabVisible ? 'hidden' : ''}>我的创作</TabsTrigger>
+                    <TabsTrigger value="decks" className={leftTabVisible ? 'hidden' : ''}>我的卡组</TabsTrigger>
                 </TabsList>
                 <TabsContent value="terms" className="mt-4 flex-grow min-h-0">
                     <UICard className="bg-card/50 flex flex-col h-full">
@@ -552,14 +557,14 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
             </Tabs>
         </div>
 
-        <div className={activeMainTab === 'deck' ? "w-3/4 flex flex-col" : "w-1/2 flex flex-col"}>
+        <div className="w-1/2 flex flex-col h-full">
           <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValueChange={setActiveMainTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow-0">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
               <UICard className="bg-card/50">
                 <CardHeader>
                   <div className="flex items-center gap-2 justify-between">
@@ -620,6 +625,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                  <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
+                       <Button onClick={handleSaveDeck}>保存牌组</Button>
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow min-h-0">
@@ -665,5 +671,3 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       </div>
   );
 }
-
-    
