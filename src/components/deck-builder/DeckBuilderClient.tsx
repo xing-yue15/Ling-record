@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, ArrowLeft } from 'lucide-react';
+import { Wand2, Loader2, Trash2, ArrowLeft, PlusCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -291,6 +291,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   
   const [createdCards, setCreatedCards] = useState<Card[]>([]);
   const [savedDecks, setSavedDecks] = useState<{name: string, cards: Card[]}[]>([]);
+  const [editingDeckIndex, setEditingDeckIndex] = useState<number | null>(null);
+
   
   const craftingAreaRef = useHorizontalScroll();
   const limiterCraftingAreaRef = useHorizontalScroll();
@@ -465,10 +467,21 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         toast({ title: '无法保存', description: '你的牌组是空的', variant: 'destructive' });
         return;
     }
-    // In a real app, you would ask for a deck name
-    const deckName = `我的牌组 ${savedDecks.length + 1}`;
-    setSavedDecks(prev => [...prev, { name: deckName, cards: deck }]);
-    toast({ title: '牌组已保存！', description: `“${deckName}”已保存` });
+    
+    if (editingDeckIndex !== null) {
+      // Update existing deck
+      const updatedDecks = [...savedDecks];
+      updatedDecks[editingDeckIndex].cards = deck;
+      setSavedDecks(updatedDecks);
+      toast({ title: '牌组已更新！', description: `“${updatedDecks[editingDeckIndex].name}”已更新` });
+    } else {
+      // Save as new deck
+      const deckName = `我的牌组 ${savedDecks.length + 1}`;
+      const newDeck = { name: deckName, cards: deck };
+      setSavedDecks(prev => [...prev, newDeck]);
+      setEditingDeckIndex(savedDecks.length);
+      toast({ title: '牌组已保存！', description: `“${deckName}”已保存` });
+    }
   }
 
   const removeCreatedCard = (cardId: string) => {
@@ -476,203 +489,243 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
     setDeck(prev => prev.filter(c => c.id !== cardId)); // Also remove from current deck if present
   }
 
+  const handleLoadDeck = (index: number) => {
+    setDeck([...savedDecks[index].cards]);
+    setEditingDeckIndex(index);
+    setActiveMainTab('deck');
+  }
+
+  const handleDeleteDeck = (index: number) => {
+    if (editingDeckIndex === index) {
+        handleCreateNewDeck();
+    }
+    setSavedDecks(prev => prev.filter((_, i) => i !== index));
+    if (editingDeckIndex !== null && editingDeckIndex > index) {
+        setEditingDeckIndex(prev => prev! - 1);
+    }
+    toast({ title: '牌组已删除' });
+  }
+
+  const handleCreateNewDeck = () => {
+    setDeck([]);
+    setEditingDeckIndex(null);
+    setActiveMainTab('deck');
+  }
+
+  const currentDeckName = editingDeckIndex !== null ? savedDecks[editingDeckIndex]?.name : '新牌组';
+
+
   return (
     <div className="flex h-full flex-row gap-8">
-        <div className="w-1/4 flex flex-col">
-            <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="w-full flex flex-col h-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="terms" className={activeMainTab === 'deck' ? 'hidden' : ''}>可用词条</TabsTrigger>
-                    <TabsTrigger value="creations" className={activeMainTab === 'creator' ? 'hidden' : ''}>我的创作</TabsTrigger>
-                    <TabsTrigger value="decks" className={activeMainTab === 'creator' ? 'hidden' : ''}>我的卡组</TabsTrigger>
-                </TabsList>
-                <TabsContent value="terms" className="mt-4 flex-grow min-h-0">
-                    <UICard className="bg-card/50 flex flex-col h-full">
-                        <CardContent className="flex-grow min-h-0 p-4">
-                            <ScrollArea className="h-full pr-4">
-                                <div className="space-y-4">
-                                {ownedTerms.map(term => (
-                                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
-                                    <div>
-                                        <h3 className="font-bold flex items-center gap-2">
-                                        {term.name} 
-                                        <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
-                                        <Badge variant="outline">消耗: {term.cost}</Badge>
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground mt-1 whitespace-normal">法术: {term.description.spell}</p>
-                                        <p className="text-xs text-muted-foreground whitespace-normal">造物: {term.description.creature}</p>
-                                    </div>
-                                    <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
-                                    </div>
-                                ))}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </UICard>
-                </TabsContent>
-                 <TabsContent value="creations" className="mt-4 flex-grow min-h-0">
-                     <UICard className="bg-card/50 flex flex-col h-full">
-                        <CardContent className="flex-grow min-h-0 p-4">
-                            <ScrollArea className="h-full pr-4">
-                                {createdCards.length === 0 ? (
-                                     <p className="text-muted-foreground text-center py-10">
-                                        你还没有任何创作
-                                     </p>
-                                ) : (
-                                <div className="space-y-4">
-                                    {createdCards.map(card => (
-                                        <div key={card.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
-                                            <div className="flex-grow">
-                                                <h3 className="font-bold">{card.name}</h3>
-                                                <p className="text-xs text-muted-foreground">{card.type}</p>
-                                            </div>
-                                            <Button size="sm" onClick={() => setDeck(prev => [...prev, card])} className="mr-2">添加</Button>
-                                            <Button size="icon" variant="destructive" onClick={() => removeCreatedCard(card.id)}>
-                                                <Trash2 className="w-4 h-4"/>
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                                )}
-                            </ScrollArea>
-                        </CardContent>
-                    </UICard>
-                </TabsContent>
-                <TabsContent value="decks" className="mt-4 flex-grow min-h-0">
-                    <UICard className="bg-card/50 flex flex-col h-full">
-                        <CardContent className="flex-grow min-h-0 p-4">
-                            <ScrollArea className="h-full pr-4">
-                                {savedDecks.length === 0 ? (
-                                    <p className="text-muted-foreground text-center py-10">
-                                        你还没有保存任何牌组
-                                    </p>
-                                ) : (
-                                <div className="space-y-4">
-                                    {savedDecks.map((savedDeck, index) => (
-                                        <div key={index} className="p-3 bg-secondary/70 rounded-lg">
-                                            <h3 className="font-bold">{savedDeck.name}</h3>
-                                            <p className="text-xs text-muted-foreground">{savedDeck.cards.length} 张卡牌</p>
-                                        </div>
-                                    ))}
-                                </div>
-                                )}
-                            </ScrollArea>
-                        </CardContent>
-                    </UICard>
-                </TabsContent>
-            </Tabs>
-        </div>
-
-        <div className="w-1/2 flex flex-col h-full">
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full flex-grow flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="creator">卡牌创造</TabsTrigger>
-              <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
-              <UICard className="bg-card/50">
-                <CardHeader>
-                  <div className="flex items-center gap-2 justify-between">
-                    <CardTitle className="font-headline flex items-center gap-2">
-                      {craftingMode !== 'main' && (
-                         <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
-                            <ArrowLeft className="w-4 h-4 mr-1"/> 完成
-                         </Button>
-                      )}
-                      <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
-                    </CardTitle>
-                    {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4 min-h-[12rem] flex items-center">
-                    {termsInCurrentCraftingArea.length === 0 ? (
-                        <div className="w-full flex items-center justify-center">
-                          <p className="text-muted-foreground text-center">
-                            {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
-                          </p>
+      <div className="w-1/4 flex flex-col">
+        <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="w-full flex flex-col h-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="terms" style={{ display: activeMainTab === 'deck' ? 'none' : 'flex' }}>可用词条</TabsTrigger>
+            <TabsTrigger value="creations" style={{ display: activeMainTab === 'creator' ? 'none' : 'flex' }}>我的创作</TabsTrigger>
+            <TabsTrigger value="decks" style={{ display: activeMainTab === 'creator' ? 'none' : 'flex' }}>我的卡组</TabsTrigger>
+          </TabsList>
+          <TabsContent value="terms" className="mt-4 flex-grow min-h-0">
+            <UICard className="bg-card/50 flex flex-col h-full">
+              <CardContent className="flex-grow min-h-0 p-4">
+                <ScrollArea className="h-full pr-4 max-h-[80vh]">
+                  <div className="space-y-4">
+                    {ownedTerms.map(term => (
+                      <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
+                        <div>
+                          <h3 className="font-bold flex items-center gap-2">
+                            {term.name}
+                            <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
+                            <Badge variant="outline">消耗: {term.cost}</Badge>
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-normal">法术: {term.description.spell}</p>
+                          <p className="text-xs text-muted-foreground whitespace-normal">造物: {term.description.creature}</p>
                         </div>
-                    ) : (
-                       <CraftingAreaContent 
-                         terms={termsInCurrentCraftingArea}
-                         onRemove={removeTermFromCrafting}
-                         onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
-                       />
-                    )}
+                        <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </UICard>
-
-              {(craftingMode === 'main' && mainTerms.length > 0) && (
-                <UICard className="bg-card/50">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex gap-2">
-                          <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
-                          <Button onClick={handleGenerateName} disabled={isGenerating}>
-                              {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                              <span className="ml-2 hidden sm:inline">AI取名</span>
-                          </Button>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
-                      <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
-                    </div>
-                    <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
-                      添加到牌组
-                    </Button>
-                  </CardContent>
-                </UICard>
-              )}
-            </TabsContent>
-
-            <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
-              <UICard className="bg-card/50 h-full flex flex-col">
-                 <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="font-headline">当前牌组 ({deck.length})</CardTitle>
-                       <Button onClick={handleSaveDeck}>保存牌组</Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-grow min-h-0">
-                  <ScrollArea className="h-full pr-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {deck.map((card, index) => (
-                        <div key={index} className="relative group/deckcard">
-                          <GameCard card={card} />
-                           <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-2 right-2 opacity-0 group-hover/deckcard:opacity-100 transition-opacity"
-                              onClick={() => setDeck(d => d.filter((_, i) => i !== index))}
-                          >
-                              <Trash2 className="h-4 w-4" />
+                </ScrollArea>
+              </CardContent>
+            </UICard>
+          </TabsContent>
+          <TabsContent value="creations" className="mt-4 flex-grow min-h-0">
+            <UICard className="bg-card/50 flex flex-col h-full">
+              <CardContent className="flex-grow min-h-0 p-4">
+                <ScrollArea className="h-full pr-4">
+                  {createdCards.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-10">
+                      你还没有任何创作
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {createdCards.map(card => (
+                        <div key={card.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
+                          <div className="flex-grow">
+                            <h3 className="font-bold">{card.name}</h3>
+                            <p className="text-xs text-muted-foreground">{card.type}</p>
+                          </div>
+                          <Button size="sm" onClick={() => setDeck(prev => [...prev, card])} className="mr-2">添加到牌组</Button>
+                          <Button size="icon" variant="destructive" onClick={() => removeCreatedCard(card.id)}>
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       ))}
-                      {deck.length === 0 && 
-                        <div className="col-span-full text-muted-foreground text-center py-10">
-                          <p>你的牌组是空的</p>
-                        </div>
-                      }
                     </div>
-                  </ScrollArea>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </UICard>
+          </TabsContent>
+          <TabsContent value="decks" className="mt-4 flex-grow min-h-0">
+            <UICard className="bg-card/50 flex flex-col h-full">
+              <CardHeader>
+                <Button variant="outline" onClick={handleCreateNewDeck}>
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    创建新牌组
+                </Button>
+              </CardHeader>
+              <CardContent className="flex-grow min-h-0 p-4">
+                <ScrollArea className="h-full pr-4">
+                  {savedDecks.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-10">
+                      你还没有保存任何牌组
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {savedDecks.map((savedDeck, index) => (
+                        <div key={index} className="p-3 bg-secondary/70 rounded-lg group">
+                          <div className="flex justify-between items-center cursor-pointer" onClick={() => handleLoadDeck(index)}>
+                              <div>
+                                <h3 className="font-bold">{savedDeck.name}</h3>
+                                <p className="text-xs text-muted-foreground">{savedDeck.cards.length} 张卡牌</p>
+                              </div>
+                              <Button size="icon" variant="destructive" className="opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleDeleteDeck(index); }}>
+                                  <Trash2 className="w-4 h-4" />
+                              </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </UICard>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <div className="w-1/2 flex flex-col h-full">
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full flex-grow flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="creator">卡牌创造</TabsTrigger>
+            <TabsTrigger value="deck">当前牌组</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="creator" className="mt-4 flex-grow flex flex-col space-y-4">
+            <UICard className="bg-card/50">
+              <CardHeader>
+                <div className="flex items-center gap-2 justify-between">
+                  <CardTitle className="font-headline flex items-center gap-2">
+                    {craftingMode !== 'main' && (
+                       <Button variant="outline" size="sm" onClick={completeLimiterEditing} className="h-auto px-2 py-1">
+                          <ArrowLeft className="w-4 h-4 mr-1"/> 完成
+                       </Button>
+                    )}
+                    <span>{craftingMode === 'main' ? '主制作区' : `编辑限定词: ${craftingMode.limiter.name}`}</span>
+                  </CardTitle>
+                  {termsInCurrentCraftingArea.length > 0 && <Button variant="destructive" size="sm" onClick={clearCrafting} className="h-auto px-2 py-1">清空</Button>}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4 min-h-[12rem] flex items-center">
+                  {termsInCurrentCraftingArea.length === 0 ? (
+                      <div className="w-full flex items-center justify-center">
+                        <p className="text-muted-foreground text-center">
+                          {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
+                        </p>
+                      </div>
+                  ) : (
+                     <CraftingAreaContent 
+                       terms={termsInCurrentCraftingArea}
+                       onRemove={removeTermFromCrafting}
+                       onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
+                     />
+                  )}
+                </div>
+              </CardContent>
+            </UICard>
+
+            {(craftingMode === 'main' && mainTerms.length > 0) && (
+              <UICard className="bg-card/50">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex gap-2">
+                        <Input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="输入卡牌名称" />
+                        <Button onClick={handleGenerateName} disabled={isGenerating}>
+                            {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                            <span className="ml-2 hidden sm:inline">AI取名</span>
+                        </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setCardType('法术牌')} variant={cardType === '法术牌' ? 'default' : 'secondary'} className="w-full">法术</Button>
+                    <Button onClick={() => setCardType('造物牌')} variant={cardType === '造物牌' ? 'default' : 'secondary'} className="w-full">生物</Button>
+                  </div>
+                  <Button size="lg" className="w-full" onClick={addCardToDeck} disabled={craftingMode !== 'main'}>
+                    添加到牌组
+                  </Button>
                 </CardContent>
               </UICard>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+          </TabsContent>
 
-        {activeMainTab === 'creator' && (
-          <div className="w-1/4 flex justify-center">
-            <div className="w-64 h-96 mt-16">
-                {previewCard ? <GameCard card={previewCard} /> :
-                <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                    <p className="text-muted-foreground">卡牌预览</p>
-                </div>
-                }
-            </div>
-          </div>
-        )}
+          <TabsContent value="deck" className="mt-4 flex-grow min-h-0 flex flex-col">
+            <UICard className="bg-card/50 h-full flex flex-col">
+               <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="font-headline">{currentDeckName} ({deck.length})</CardTitle>
+                     <Button onClick={handleSaveDeck}>保存牌组</Button>
+                  </div>
+              </CardHeader>
+              <CardContent className="flex-grow min-h-0">
+                <ScrollArea className="h-full pr-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {deck.map((card, index) => (
+                      <div key={card.id + index} className="relative group/deckcard">
+                        <GameCard card={card} />
+                         <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover/deckcard:opacity-100 transition-opacity z-10"
+                            onClick={() => setDeck(d => d.filter((c, i) => c.id + i !== card.id + index))}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {deck.length === 0 && 
+                      <div className="col-span-full text-muted-foreground text-center py-10">
+                        <p>你的牌组是空的</p>
+                        <p className="text-sm">从“我的创作”中添加卡牌或返回“卡牌创造”</p>
+                      </div>
+                    }
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </UICard>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {activeMainTab === 'creator' && (
+        <div className="w-1/4 flex justify-center items-start pt-16">
+          <div className="w-64 h-96">
+              {previewCard ? <GameCard card={previewCard} /> :
+              <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                  <p className="text-muted-foreground">卡牌预览</p>
+              </div>
+              }
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
