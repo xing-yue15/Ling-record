@@ -9,11 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { generateCardName } from '@/ai/flows/generate-card-name';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Wand2, Loader2, Trash2, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 interface LimiterGroup {
   limiter: Term;
@@ -277,9 +275,6 @@ const useHorizontalScroll = () => {
 }
 
 export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
-  const searchParams = useSearchParams();
-  const enemyId = searchParams.get('enemyId');
-
   const [mainTerms, setMainTerms] = useState<CraftingItem[]>([]);
   const [limiterTerms, setLimiterTerms] = useState<Term[]>([]);
   const [craftingMode, setCraftingMode] = useState<'main' | { limiter: Term, originalIndex?: number }>('main');
@@ -290,6 +285,10 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+
+  const [activeMainTab, setActiveMainTab] = useState('creator');
+  const [createdCards, setCreatedCards] = useState<Card[]>([]);
+  const [savedDecks, setSavedDecks] = useState<{name: string, cards: Card[]}[]>([]);
   
   const craftingAreaRef = useHorizontalScroll();
   const limiterCraftingAreaRef = useHorizontalScroll();
@@ -307,11 +306,6 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
       return createCardFromTerms(allTerms, cardName, cardType);
   }, [mainTerms, limiterTerms, craftingMode, cardName, cardType]);
   
-  
-  const deckTotalCost = useMemo(() => {
-    return deck.reduce((total, card) => total + card.finalCost, 0);
-  }, [deck]);
-
   const addTermToCrafting = (term: Term) => {
     if (term.type === '限定') {
       if (craftingMode !== 'main') {
@@ -448,10 +442,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
 
     if (finalPreviewCard) {
       setDeck(prev => [...prev, finalPreviewCard]);
+      setCreatedCards(prev => [...prev, finalPreviewCard]);
       setMainTerms([]);
       setLimiterTerms([]);
       setCardName("新卡牌");
-      toast({ title: '卡牌已添加!', description: `"${finalPreviewCard.name}" 已添加到您的牌组` });
+      toast({ title: '卡牌已添加!', description: `"${finalPreviewCard.name}" 已添加到您的牌组和创作中` });
     }
   };
 
@@ -460,47 +455,111 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         toast({ title: '无法保存', description: '你的牌组是空的', variant: 'destructive' });
         return;
     }
-    toast({ title: '牌组已保存！', description: '（此功能为占位符）' });
+    // In a real app, you would ask for a deck name
+    const deckName = `我的牌组 ${savedDecks.length + 1}`;
+    setSavedDecks(prev => [...prev, { name: deckName, cards: deck }]);
+    toast({ title: '牌组已保存！', description: `“${deckName}”已保存` });
+  }
+
+  const removeCreatedCard = (cardId: string) => {
+    setCreatedCards(prev => prev.filter(c => c.id !== cardId));
+    setDeck(prev => prev.filter(c => c.id !== cardId)); // Also remove from current deck if present
   }
 
   return (
     <div className="flex h-full flex-row gap-8">
-        {/* Left Column: Available Terms */}
-        <UICard className="w-1/4 bg-card/50 flex flex-col">
-          <CardHeader>
-            <CardTitle className="font-headline">可用词条</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow min-h-0">
-             <ScrollArea className="h-full pr-4">
-                <div className="space-y-4">
-                  {ownedTerms.map(term => (
-                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold flex items-center gap-2">
-                          {term.name} 
-                          <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
-                          <Badge variant="outline">消耗: {term.cost}</Badge>
-                        </h3>
-                         <p className="text-xs text-muted-foreground mt-1 whitespace-normal">法术: {term.description.spell}</p>
-                         <p className="text-xs text-muted-foreground whitespace-normal">造物: {term.description.creature}</p>
-                      </div>
-                      <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
-                    </div>
-                  ))}
-                </div>
-            </ScrollArea>
-          </CardContent>
-        </UICard>
+        <div className="w-1/4 flex flex-col">
+            <Tabs defaultValue="terms" className="w-full flex-grow flex flex-col">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="terms">可用词条</TabsTrigger>
+                    <TabsTrigger value="creations">我的创作</TabsTrigger>
+                    <TabsTrigger value="decks">我的卡组</TabsTrigger>
+                </TabsList>
+                <TabsContent value="terms" className="mt-4 flex-grow min-h-0">
+                    <UICard className="bg-card/50 flex flex-col h-full">
+                        <CardContent className="flex-grow min-h-0 p-4">
+                            <ScrollArea className="h-full pr-4">
+                                <div className="space-y-4">
+                                {ownedTerms.map(term => (
+                                    <div key={term.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-bold flex items-center gap-2">
+                                        {term.name} 
+                                        <span className="text-xs font-normal text-muted-foreground">({term.type})</span>
+                                        <Badge variant="outline">消耗: {term.cost}</Badge>
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1 whitespace-normal">法术: {term.description.spell}</p>
+                                        <p className="text-xs text-muted-foreground whitespace-normal">造物: {term.description.creature}</p>
+                                    </div>
+                                    <Button size="sm" onClick={() => addTermToCrafting(term)}>添加</Button>
+                                    </div>
+                                ))}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </UICard>
+                </TabsContent>
+                 <TabsContent value="creations" className="mt-4 flex-grow min-h-0">
+                     <UICard className="bg-card/50 flex flex-col h-full">
+                        <CardContent className="flex-grow min-h-0 p-4">
+                            <ScrollArea className="h-full pr-4">
+                                {createdCards.length === 0 ? (
+                                     <p className="text-muted-foreground text-center py-10">
+                                        你还没有任何创作
+                                     </p>
+                                ) : (
+                                <div className="space-y-4">
+                                    {createdCards.map(card => (
+                                        <div key={card.id} className="p-3 bg-secondary/70 rounded-lg flex items-center justify-between">
+                                            <div className="flex-grow">
+                                                <h3 className="font-bold">{card.name}</h3>
+                                                <p className="text-xs text-muted-foreground">{card.type}</p>
+                                            </div>
+                                            <Button size="sm" onClick={() => setDeck(prev => [...prev, card])} className="mr-2">添加</Button>
+                                            <Button size="icon" variant="destructive" onClick={() => removeCreatedCard(card.id)}>
+                                                <Trash2 className="w-4 h-4"/>
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                )}
+                            </ScrollArea>
+                        </CardContent>
+                    </UICard>
+                </TabsContent>
+                <TabsContent value="decks" className="mt-4 flex-grow min-h-0">
+                    <UICard className="bg-card/50 flex flex-col h-full">
+                        <CardContent className="flex-grow min-h-0 p-4">
+                            <ScrollArea className="h-full pr-4">
+                                {savedDecks.length === 0 ? (
+                                    <p className="text-muted-foreground text-center py-10">
+                                        你还没有保存任何牌组
+                                    </p>
+                                ) : (
+                                <div className="space-y-4">
+                                    {savedDecks.map((savedDeck, index) => (
+                                        <div key={index} className="p-3 bg-secondary/70 rounded-lg">
+                                            <h3 className="font-bold">{savedDeck.name}</h3>
+                                            <p className="text-xs text-muted-foreground">{savedDeck.cards.length} 张卡牌</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                )}
+                            </ScrollArea>
+                        </CardContent>
+                    </UICard>
+                </TabsContent>
+            </Tabs>
+        </div>
 
-        {/* Middle Column: Creator / Deck */}
-        <div className="w-1/2 flex flex-col">
-          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col">
+        <div className={activeMainTab === 'deck' ? "w-3/4 flex flex-col" : "w-1/2 flex flex-col"}>
+          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValueChange={setActiveMainTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4">
+            <TabsContent value="creator" className="mt-4 flex flex-col space-y-4 flex-grow-0">
               <UICard className="bg-card/50">
                 <CardHeader>
                   <div className="flex items-center gap-2 justify-between">
@@ -590,16 +649,17 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
           </Tabs>
         </div>
 
-        {/* Right Column: Card Preview */}
-        <div className="w-1/4 flex justify-center">
-          <div className="w-64 h-96 mt-16">
-              {previewCard ? <GameCard card={previewCard} /> :
-              <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
-                  <p className="text-muted-foreground">卡牌预览</p>
-              </div>
-              }
+        {activeMainTab === 'creator' && (
+          <div className="w-1/4 flex justify-center">
+            <div className="w-64 h-96 mt-16">
+                {previewCard ? <GameCard card={previewCard} /> :
+                <div className="w-full h-full rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-card/30">
+                    <p className="text-muted-foreground">卡牌预览</p>
+                </div>
+                }
+            </div>
           </div>
-        </div>
+        )}
       </div>
   );
 }

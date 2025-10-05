@@ -10,24 +10,15 @@ function DeckBuilderPage() {
   const ownedTerms = initialTerms;
 
   return (
-    <div className="container mx-auto py-8 px-4 h-screen flex flex-col">
-      <div className="text-center mb-8 flex-shrink-0">
+    <div className="h-screen flex flex-col">
+      <header className="flex-shrink-0 text-center py-4 px-4">
         <h1 className="font-headline text-4xl font-bold text-primary">构筑牌组</h1>
         <p className="text-foreground/80 mt-2">在这里自由练习并保存你的牌组</p>
-      </div>
-
-      <div className="flex-grow min-h-0">
-        <DeckBuilderClient ownedTerms={ownedTerms} />
-      </div>
+      </header>
       
-      <div className="flex-shrink-0 pt-8 flex justify-center gap-4">
-        <Button size="lg" variant="outline" asChild>
-            <Link href="/worlds">返回</Link>
-        </Button>
-         <Button size="lg" disabled title="此功能尚未实现">
-            保存牌组
-        </Button>
-      </div>
+      <main className="flex-grow min-h-0 px-4 pb-4">
+          <DeckBuilderClient ownedTerms={ownedTerms} />
+      </main>
     </div>
   );
 }
