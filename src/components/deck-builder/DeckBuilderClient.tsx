@@ -287,7 +287,8 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const { toast } = useToast();
 
   const [activeMainTab, setActiveMainTab] = useState('creator');
-  const [leftTabVisible, setLeftTabVisible] = useState(true);
+  const [activeLeftTab, setActiveLeftTab] = useState('terms');
+  
   const [createdCards, setCreatedCards] = useState<Card[]>([]);
   const [savedDecks, setSavedDecks] = useState<{name: string, cards: Card[]}[]>([]);
   
@@ -295,7 +296,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   const limiterCraftingAreaRef = useHorizontalScroll();
 
   useEffect(() => {
-      setLeftTabVisible(activeMainTab === 'creator');
+    if (activeMainTab === 'creator') {
+      setActiveLeftTab('terms');
+    } else if (activeMainTab === 'deck') {
+      setActiveLeftTab('creations');
+    }
   }, [activeMainTab]);
 
 
@@ -474,11 +479,11 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
   return (
     <div className="flex h-full flex-row gap-8">
         <div className="w-1/4 flex flex-col">
-            <Tabs defaultValue="terms" className="w-full flex flex-col h-full">
+            <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="w-full flex flex-col h-full">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="terms" className={!leftTabVisible ? 'hidden' : ''}>可用词条</TabsTrigger>
-                    <TabsTrigger value="creations" className={leftTabVisible ? 'hidden' : ''}>我的创作</TabsTrigger>
-                    <TabsTrigger value="decks" className={leftTabVisible ? 'hidden' : ''}>我的卡组</TabsTrigger>
+                    <TabsTrigger value="terms" className={activeMainTab === 'deck' ? 'hidden' : ''}>可用词条</TabsTrigger>
+                    <TabsTrigger value="creations" className={activeMainTab === 'creator' ? 'hidden' : ''}>我的创作</TabsTrigger>
+                    <TabsTrigger value="decks" className={activeMainTab === 'creator' ? 'hidden' : ''}>我的卡组</TabsTrigger>
                 </TabsList>
                 <TabsContent value="terms" className="mt-4 flex-grow min-h-0">
                     <UICard className="bg-card/50 flex flex-col h-full">
@@ -558,7 +563,7 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
         </div>
 
         <div className="w-1/2 flex flex-col h-full">
-          <Tabs defaultValue="creator" className="w-full flex-grow flex flex-col" onValueChange={setActiveMainTab}>
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full flex-grow flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="creator">卡牌创造</TabsTrigger>
               <TabsTrigger value="deck">当前牌组 ({deck.length})</TabsTrigger>
@@ -580,21 +585,21 @@ export function DeckBuilderClient({ ownedTerms }: { ownedTerms: Term[] }) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {termsInCurrentCraftingArea.length === 0 ? (
-                      <div className="min-h-[12rem] flex items-center justify-center">
-                        <p className="text-muted-foreground text-center">
-                          {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
-                        </p>
-                      </div>
-                  ) : (
-                    <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4">
+                  <div ref={craftingMode === 'main' ? craftingAreaRef : limiterCraftingAreaRef} className="overflow-x-auto whitespace-nowrap pb-4 min-h-[12rem] flex items-center">
+                    {termsInCurrentCraftingArea.length === 0 ? (
+                        <div className="w-full flex items-center justify-center">
+                          <p className="text-muted-foreground text-center">
+                            {craftingMode === 'main' ? '从左侧添加词条以开始制作' : `为“${craftingMode.limiter.name}”添加词条`}
+                          </p>
+                        </div>
+                    ) : (
                        <CraftingAreaContent 
                          terms={termsInCurrentCraftingArea}
                          onRemove={removeTermFromCrafting}
                          onGroupClick={craftingMode === 'main' ? handleLimiterGroupClick : undefined}
                        />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </CardContent>
               </UICard>
 
